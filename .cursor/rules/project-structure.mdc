@@ -1,0 +1,40 @@
+# Python项目加密分发框架 - 项目结构指南
+
+## 核心架构
+
+这是一个Python项目加密分发框架，具有以下核心组件：
+
+### 主要入口点
+- [bootstrap.py](mdc:bootstrap.py) - 系统启动器，负责初始化加密环境
+- [config.py](mdc:config.py) - 配置管理，处理所有框架配置
+- [__main__.py](mdc:__main__.py) - 模块入口点
+- [test_framework.py](mdc:test_framework.py) - 框架测试套件
+
+### 核心模块
+- [core/](mdc:core/) - 核心加密引擎
+  - [crypto.py](mdc:core/crypto.py) - AES加密实现
+  - [auth.py](mdc:core/auth.py) - 授权和密钥管理
+  - [errors.py](mdc:core/errors.py) - 异常定义
+- [discovery/](mdc:discovery/) - 文件发现系统
+- [loaders/](mdc:loaders/) - 动态加载系统
+- [builders/](mdc:builders/) - 构建系统
+- [cli/](mdc:cli/) - 命令行工具
+  - [main.py](mdc:cli/main.py) - CLI入口点
+  - [commands.py](mdc:cli/commands.py) - 命令实现
+- [utils/](mdc:utils/) - 工具函数
+
+### 文档和配置
+- [README.md](mdc:README.md) - 项目说明文档
+- [FRAMEWORK_SUMMARY.md](mdc:FRAMEWORK_SUMMARY.md) - 框架总结
+- [INSTALL.md](mdc:INSTALL.md) - 安装指南
+- [Makefile](mdc:Makefile) - 构建脚本
+
+## 开发原则
+- 遵循Unix哲学：每个组件只做一件事，做好一件事
+- 模块化设计，清晰的模块边界
+- 零配置，自动发现和处理
+- 开发者完全无感知的加密/解密过程
+description:
+globs:
+alwaysApply: true
+---

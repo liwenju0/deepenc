@@ -41,30 +41,7 @@ class HardwareAuth:
         except Exception as err:
             print(f"Failed to import hexie_auth: {err}. Ukey is not available!")
             self.ukey_handler = None
-    
-    def read_license_from_ukey(self, device_type='wd'):
-        """从硬件设备读取许可证
-        
-        完全按照原项目的方法调用。
-        
-        Args:
-            device_type: 设备类型，默认 'wd'
-            
-        Returns:
-            str: 许可证字符串，失败返回空字符串
-        """
-        if not self.ukey_handler:
-            return ""
-        
-        try:
-            # 按照原项目的方式调用
-            license_str = self.ukey_handler.ReadLicenseFromUkey(device_type)
-            print(f"Get license from ukey! {len(license_str)}")
-            return license_str
-            
-        except Exception as err:
-            print(f"Failed to read license from ukey! {err}")
-            return ""
+
     
     def get_device_id(self):
         """获取设备 ID
@@ -149,58 +126,28 @@ class AuthManager:
     def _get_encryption_key(self):
         """获取加密密钥
         
-        完全按照原项目 io_util.py 的逻辑：
-        1. 如果启用硬件授权，从硬件获取
-        2. 否则从许可证文件获取
-        3. 最后从环境变量获取
+        仅从许可证文件获取密钥。
         
         Returns:
             str: 加密密钥
         """
-        # 如果启用硬件授权
-        if self.hardware_auth:
-            key = self._get_key_from_hardware()
-            if key:
-                return key
+      
         
-        # 从许可证文件获取
+        # 仅从许可证文件获取
         key = self._get_key_from_license_file()
-        if key:
-            return key
-        
-        # 从环境变量获取
-        key = self._get_key_from_environment()
         if key:
             return key
         
         print("❌ 无法获取加密密钥")
         return None
     
-    def _get_key_from_hardware(self):
-        """从硬件授权获取密钥"""
-        try:
-            # 读取硬件许可证
-            license_str = self.hardware_auth.read_license_from_ukey('wd')
-            if not license_str:
-                return None
-            
-            # 根据授权模式处理许可证
-            auth_mode = os.environ.get("AUTH_MODE", "DEV")
-            
-            if auth_mode == 'DEV':
-                # 开发模式：直接使用前16位
-                return license_str[:16] if len(license_str) >= 16 else None
-            else:
-                # 生产模式：解密许可证
-                decrypted_license = self.hardware_auth.decrypt_license(license_str)
-                return decrypted_license[:16] if len(decrypted_license) >= 16 else None
-                
-        except Exception as e:
-            print(f"从硬件获取密钥失败: {e}")
-            return None
     
     def _get_key_from_license_file(self):
-        """从许可证文件获取密钥"""
+        """从许可证文件获取密钥
+        
+        DEV 模式：许可证文件内容即为原始未加密的 key。
+        非 DEV 模式：许可证文件内容为加密数据，需要通过 hardware_auth 解密得到 key。
+        """
         try:
             # 如果有硬件授权，尝试获取设备特定的许可证文件
             if self.hardware_auth:
@@ -219,26 +166,26 @@ class AuthManager:
                 with open(license_file, 'r', encoding='utf-8') as f:
                     license_str = f.read()
                 print(f"Read license from {license_file}")
-                return license_str[:16] if len(license_str) >= 16 else None
+
+                license_str = license_str.strip()
+                auth_mode = os.environ.get("AUTH_MODE", "DEV")
+
+                if auth_mode == 'DEV':
+                    # 开发模式：直接使用文件中的原始 key
+                    return license_str if license_str else None
+                else:
+                    # 非开发模式：需要通过硬件授权解密
+                    if not self.hardware_auth:
+                        print("非 DEV 模式缺少 hardware_auth，无法解密许可证")
+                        return None
+                    decrypted = self.hardware_auth.decrypt_license(license_str)
+                    decrypted = decrypted.strip() if decrypted else ""
+                    return decrypted if decrypted else None
             
             return None
             
         except Exception as e:
             print(f"从许可证文件获取密钥失败: {e}")
-            return None
-    
-    def _get_key_from_environment(self):
-        """从环境变量获取密钥"""
-        try:
-            # 按照原项目的方式，只检查 AUTH_CODE
-            key = os.environ.get('AUTH_CODE')
-            if key and len(key) >= 16:
-                return key[:32]  # 最多取32位
-            
-            return None
-            
-        except Exception as e:
-            print(f"从环境变量获取密钥失败: {e}")
             return None
     
     def get_key(self):
@@ -286,12 +233,10 @@ class AuthManager:
         if not self.encryption_key:
             return "none"
         
-        # 按照原项目的逻辑判断来源
-        if self.hardware_auth and os.environ.get("AUTH_MODE", "DEV") != 'DEV':
-            return "hardware"
+        auth_mode = os.environ.get("AUTH_MODE", "DEV")
+        if self.hardware_auth and auth_mode != 'DEV':
+            return "hardware_decrypted_license"
         elif os.path.exists('/data/appdatas/inference/license.dat'):
             return "license_file"
-        elif os.environ.get('AUTH_CODE'):
-            return "environment"
         else:
             return "unknown"

@@ -23,9 +23,6 @@ def test_basic_encryption():
         from core.crypto import AESCrypto
         from core.auth import AuthManager
         
-        # 设置测试密钥
-        os.environ['ENCRYPTION_KEY'] = '1234567890123456'
-        
         # 初始化组件
         crypto = AESCrypto()
         auth = AuthManager()

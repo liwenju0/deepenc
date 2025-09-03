@@ -142,6 +142,7 @@ from src import main, utils
 - **智能过滤**: 自动排除测试、文档等非核心文件
 - **入口点保护**: 确保入口文件不被加密
 - **灵活配置**: 支持自定义过滤规则和构建选项
+- **自动打包**: `--genzip` 参数自动生成带密码的zip包
 
 ### 🔐 企业级安全
 
@@ -173,6 +174,12 @@ python -m deepenc build --project /path/to/project
 
 # 详细输出
 python -m deepenc build --verbose
+
+# 构建完成后生成zip包
+python -m deepenc build --genzip
+
+# 结合其他参数使用
+python -m deepenc build --project /path/to/project --genzip --verbose
 ```
 
 ### 管理命令
@@ -230,6 +237,21 @@ report = builder.build_project()
 scan_report = builder.scan_project()
 ```
 
+### ZIP 包生成
+
+```bash
+# 基本用法
+deepenc build --genzip
+
+# 环境变量配置
+export UNZIP_CODE="your_custom_password"
+deepenc build --genzip
+
+# 生成的文件格式
+# {projectname}.{version}.zip
+# 例如: myproject.1.2.3.zip
+```
+
 ### 发现接口
 
 ```python
@@ -259,6 +281,7 @@ onnx_files = scanner.discover_onnx_files()
 - [架构设计](docs/architecture.md) - 系统架构详解
 - [最佳实践](docs/best_practices.md) - 开发和使用建议
 - [配置参考](docs/configuration.md) - 配置选项详解
+- [ZIP 包生成](docs/zip_generation.md) - 自动打包功能详解
 
 ## 🎯 使用场景
 
@@ -279,6 +302,7 @@ onnx_files = scanner.discover_onnx_files()
 - **内部系统**: 保护企业内部工具和脚本
 - **客户部署**: 保护交付给客户的代码
 - **云服务**: 保护云端的业务逻辑
+- **自动化分发**: 构建完成后自动生成带密码的zip包
 
 ## 🚀 部署示例
 

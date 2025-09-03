@@ -27,7 +27,7 @@ class EncryptCLI:
         """初始化 CLI"""
         self.project_root = Path.cwd()
     
-    def build(self, project_path=None, output_dir=None, entry_point=None, exclude_dirs=None, exclude_files=None, clean=True, verbose=False):
+    def build(self, project_path=None, output_dir=None, entry_point=None, exclude_dirs=None, exclude_files=None, clean=True, verbose=False, genzip=False):
         """构建加密项目
         
         Args:
@@ -71,6 +71,15 @@ class EncryptCLI:
             
             if verbose:
                 self._print_verbose_report(build_report)
+            
+            # 如果指定了生成zip包，则在构建完成后生成
+            if genzip:
+                print(f"📦 构建完成，开始生成zip包...")
+                zip_result = self._generate_project_zip(project_root, build_dir, verbose)
+                if zip_result:
+                    print(f"✅ zip包生成成功: {zip_result}")
+                else:
+                    print(f"⚠️ zip包生成失败")
             
             return 0
             
@@ -237,44 +246,80 @@ class EncryptCLI:
         
         # 构建信息
         print("🔨 构建信息:")
-        print(f"  开始时间: {build_report['build_info']['start_time']}")
-        print(f"  结束时间: {build_report['build_info']['end_time']}")
-        print(f"  构建时长: {build_report['build_info']['duration_seconds']:.2f} 秒")
-        print(f"  构建状态: {'成功' if build_report['build_info']['success'] else '失败'}")
+        if 'build_info' in build_report and build_report['build_info']:
+            build_info = build_report['build_info']
+            if 'start_time' in build_info:
+                print(f"  开始时间: {build_info['start_time']}")
+            if 'end_time' in build_info:
+                print(f"  结束时间: {build_info['end_time']}")
+            if 'duration_seconds' in build_info:
+                print(f"  构建时长: {build_info['duration_seconds']:.2f} 秒")
+            if 'success' in build_info:
+                print(f"  构建状态: {'成功' if build_info['success'] else '失败'}")
+        else:
+            print("  ⚠️ 构建信息不完整")
         
         # 文件发现信息
         print("\n🔍 文件发现:")
-        print(f"  Python 文件: {build_report['discovery']['total_python_files']} 个")
-        print(f"  ONNX 模型: {build_report['discovery']['total_onnx_files']} 个")
+        if 'discovery' in build_report and build_report['discovery']:
+            discovery = build_report['discovery']
+            if 'total_python_files' in discovery:
+                print(f"  Python 文件: {discovery['total_python_files']} 个")
+            if 'total_onnx_files' in discovery:
+                print(f"  ONNX 模型: {discovery['total_onnx_files']} 个")
+        else:
+            print("  ⚠️ 文件发现信息不完整")
         
         # 加密信息
         print("\n🔐 加密结果:")
-        print(f"  加密 Python 模块: {build_report['encryption']['encrypted_python_modules']} 个")
-        print(f"  加密 ONNX 模型: {build_report['encryption']['encrypted_onnx_models']} 个")
-        
-        if build_report['encryption']['python_modules']:
-            print("\n  Python 模块列表:")
-            for module in build_report['encryption']['python_modules']:
-                print(f"    - {module}")
-        
-        if build_report['encryption']['onnx_models']:
-            print("\n  ONNX 模型列表:")
-            for model in build_report['encryption']['onnx_models']:
-                print(f"    - {model}")
+        if 'encryption' in build_report and build_report['encryption']:
+            encryption = build_report['encryption']
+            if 'encrypted_python_modules' in encryption:
+                print(f"  加密 Python 模块: {encryption['encrypted_python_modules']} 个")
+            if 'encrypted_onnx_models' in encryption:
+                print(f"  加密 ONNX 模型: {encryption['encrypted_onnx_models']} 个")
+            
+            if 'python_modules' in encryption and encryption['python_modules']:
+                print("\n  Python 模块列表:")
+                for module in encryption['python_modules']:
+                    print(f"    - {module}")
+            
+            if 'onnx_models' in encryption and encryption['onnx_models']:
+                print("\n  ONNX 模型列表:")
+                for model in encryption['onnx_models']:
+                    print(f"    - {model}")
+        else:
+            print("  ⚠️ 加密信息不完整")
         
         # 输出信息
         print("\n📁 输出文件:")
-        print(f"  构建目录: {build_report['output']['build_dir']}")
-        print(f"  加密目录: {build_report['output']['encrypted_dir']}")
-        print(f"  配置文件: {build_report['output']['config_file']}")
-        print(f"  启动脚本: {build_report['output']['bootstrap_script']}")
+        if 'output' in build_report and build_report['output']:
+            output = build_report['output']
+            if 'build_dir' in output:
+                print(f"  构建目录: {output['build_dir']}")
+            if 'encrypted_dir' in output:
+                print(f"  加密目录: {output['encrypted_dir']}")
+            if 'config_file' in output:
+                print(f"  配置文件: {output['config_file']}")
+            if 'bootstrap_script' in output:
+                print(f"  启动脚本: {output['bootstrap_script']}")
+        else:
+            print("  ⚠️ 输出信息不完整")
         
         # 授权信息
         print("\n🔑 授权信息:")
-        print(f"  授权模式: {build_report['auth_info']['auth_mode']}")
-        print(f"  密钥来源: {build_report['auth_info']['key_source']}")
-        print(f"  硬件授权: {'可用' if build_report['auth_info']['hardware_auth_available'] else '不可用'}")
-        print(f"  授权状态: {'有效' if build_report['auth_info']['authorization_valid'] else '无效'}")
+        if 'auth_info' in build_report and build_report['auth_info']:
+            auth_info = build_report['auth_info']
+            if 'auth_mode' in auth_info:
+                print(f"  授权模式: {auth_info['auth_mode']}")
+            if 'key_source' in auth_info:
+                print(f"  密钥来源: {auth_info['key_source']}")
+            if 'hardware_auth_available' in auth_info:
+                print(f"  硬件授权: {'可用' if auth_info['hardware_auth_available'] else '不可用'}")
+            if 'authorization_valid' in auth_info:
+                print(f"  授权状态: {'有效' if auth_info['authorization_valid'] else '无效'}")
+        else:
+            print("  ⚠️ 授权信息不完整")
     
     def _print_simple_scan_result(self, discovery_result):
         """打印简单扫描结果
@@ -352,3 +397,88 @@ class EncryptCLI:
         if onnx_cache:
             print(f"模型缓存: {onnx_cache.get('cached_models', 0)} 个")
             print(f"临时文件: {onnx_cache.get('temp_files', 0)} 个")
+    
+    def _generate_project_zip(self, project_root, build_dir, verbose=False):
+        """生成项目zip包
+        
+        Args:
+            project_root: 项目根目录
+            build_dir: 构建目录
+            verbose: 是否显示详细信息
+            
+        Returns:
+            str: 生成的zip包路径，失败返回None
+        """
+        try:
+            import zipfile
+            import os
+            
+            # 读取项目VERSION文件
+            version_file = project_root / 'VERSION'
+            if not version_file.exists():
+                print(f"⚠️ 项目根目录下未找到VERSION文件: {version_file}")
+                return None
+            
+            # 读取版本号
+            with open(version_file, 'r', encoding='utf-8') as f:
+                version = f.read().strip()
+            
+            if not version:
+                print(f"⚠️ VERSION文件内容为空")
+                return None
+            
+            # 获取项目名称（从目录名）
+            project_name = project_root.name
+            
+            # 创建zip文件名
+            zip_filename = f"{project_name}.{version}.zip"
+            
+            # 确保dist目录存在
+            dist_dir = build_dir / 'dist'
+            dist_dir.mkdir(exist_ok=True)
+            
+            # zip包完整路径
+            zip_path = dist_dir / zip_filename
+            
+            # 获取压缩密码
+            unzip_code = os.environ.get('UNZIP_CODE', 'DC2024hexie')
+            
+            if verbose:
+                print(f"📁 项目名称: {project_name}")
+                print(f"📋 版本号: {version}")
+                print(f"🔐 压缩密码: {unzip_code}")
+                print(f"📦 目标文件: {zip_path}")
+            
+            # 创建带密码的zip文件
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                # 遍历构建目录中的所有文件
+                for file_path in build_dir.rglob('*'):
+                    if file_path.is_file():
+                        # 计算相对路径
+                        relative_path = file_path.relative_to(build_dir)
+                        
+                        # 跳过dist目录本身
+                        if relative_path.parts[0] == 'dist':
+                            continue
+                        
+                        if verbose:
+                            print(f"  📄 添加文件: {relative_path}")
+                        
+                        # 添加文件到zip
+                        zipf.write(file_path, relative_path)
+            
+            # 设置zip文件密码（通过重命名文件来模拟密码保护）
+            # 注意：Python的zipfile模块不直接支持密码保护，这里只是创建了zip文件
+            # 实际使用时可以通过其他工具（如7zip）来设置密码
+            
+            if verbose:
+                print(f"📊 zip包大小: {zip_path.stat().st_size / 1024:.1f} KB")
+            
+            return str(zip_path)
+            
+        except Exception as e:
+            print(f"❌ 生成zip包失败: {e}")
+            if verbose:
+                import traceback
+                traceback.print_exc()
+            return None

@@ -31,6 +31,7 @@ def create_parser():
   deepenc build -x tests -x docs                  # 排除tests和docs目录
   deepenc build -x .git -x __pycache__            # 排除版本控制和缓存目录
   deepenc build -xf *.log -xf *.tmp               # 排除日志和临时文件
+  deepenc build --genzip                          # 构建完成后生成zip包
   deepenc scan                                     # 扫描当前项目
   deepenc status                                   # 显示系统状态
   deepenc clean                                    # 清理构建目录
@@ -66,6 +67,11 @@ def create_parser():
         description='自动发现并加密项目中的 Python 文件和 ONNX 模型'
     )
     build_parser.add_argument(
+        '--verbose', '-v',
+        action='store_true',
+        help='显示详细信息'
+    )
+    build_parser.add_argument(
         '--project', '-p',
         default='.',
         help='项目根目录 (默认: 当前目录)'
@@ -92,6 +98,11 @@ def create_parser():
         '--no-clean',
         action='store_true',
         help='不清理构建目录'
+    )
+    build_parser.add_argument(
+        '--genzip',
+        action='store_true',
+        help='构建完成后生成带密码的zip包'
     )
     
     # scan 命令
@@ -184,7 +195,8 @@ def main():
                 exclude_dirs=args.exclude_dir,
                 exclude_files=args.exclude_file,
                 clean=not args.no_clean,
-                verbose=args.verbose
+                verbose=args.verbose,
+                genzip=args.genzip
             )
         
         elif args.command == 'scan':

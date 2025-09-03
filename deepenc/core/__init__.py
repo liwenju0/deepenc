@@ -16,5 +16,6 @@ __all__ = [
     'AuthManager', 
     'EncryptionError',
     'AuthenticationError',
-    'DecryptionError'
+    'DecryptionError',
+    'hexie_auth'
 ]

@@ -32,6 +32,7 @@ class FileFilter:
         'test', 'tests', 'testing',      # 测试目录
         'docs', 'doc', 'documentation',  # 文档目录
         'examples', 'example', 'demo',   # 示例目录
+        ".cursor",                       # cursor目录
     }
     
     # 默认排除的文件模式

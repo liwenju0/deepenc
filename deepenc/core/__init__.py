@@ -9,6 +9,7 @@
 from .crypto import AESCrypto
 from .auth import AuthManager
 from .errors import EncryptionError, AuthenticationError, DecryptionError
+from . import hexie_auth
 
 __all__ = [
     'AESCrypto',

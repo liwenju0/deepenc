@@ -40,7 +40,9 @@ class HardwareAuth:
             print(f"✅ 成功初始化硬件授权: hexie_auth.Auth({self.timeout})")
             
         except Exception as err:
-            print(f"Failed to import hexie_auth: {err}. Ukey is not available!")
+            import traceback
+            print(traceback.format_exc())
+            print(f"Failed to import hexie_auth: {err}. Ukey is not available! {traceback.format_exc()}")
             self.ukey_handler = None
 
     

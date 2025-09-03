@@ -2,6 +2,18 @@
 include *.py
 recursive-include * *.py
 
+# 包含编译后的二进制文件
+recursive-include * *.so
+recursive-include * *.pyd
+recursive-include * *.dll
+recursive-include * *.dylib
+
+# 确保 core 目录下的 .so 文件被包含
+include deepenc/core/*.so
+include deepenc/core/*.pyd
+include deepenc/core/*.dll
+include deepenc/core/*.dylib
+
 # 包含文档
 include README.md
 include LICENSE

@@ -78,6 +78,7 @@ exclude = [
 
 [tool.setuptools.package-data]
 "deepenc" = ["*.py", "*.md", "*.txt"]
+"deepenc.core" = ["*.so", "*.pyd", "*.dll", "*.dylib"]
 
 [tool.setuptools.exclude-package-data]
 "*" = [
@@ -85,7 +86,6 @@ exclude = [
     "*.pyo",
     "*.pyd",
     "__pycache__",
-    "*.so",
     "*.dll",
     "*.dylib",
 ]

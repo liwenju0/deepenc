@@ -73,6 +73,10 @@ setup(
     },
     include_package_data=True,
     zip_safe=False,
+    package_data={
+        "deepenc": ["*.so", "*.pyd", "*.dll", "*.dylib"],
+        "deepenc.core": ["*.so", "*.pyd", "*.dll", "*.dylib"],
+    },
     keywords="encryption, distribution, python, security, onnx",
     license="MIT",
 )

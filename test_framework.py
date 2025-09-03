@@ -10,6 +10,7 @@ import os
 import sys
 import tempfile
 import shutil
+import argparse
 from pathlib import Path
 
 # 添加框架路径
@@ -111,6 +112,8 @@ def test_file_discovery():
         return True
         
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         print(f"  ❌ 文件发现测试失败: {e}")
         return False
 
@@ -207,6 +210,42 @@ def test_system_integration():
         return False
 
 
+def run_single_test(test_name):
+    """运行指定的单个测试"""
+    print(f"🧪 运行单个测试: {test_name}")
+    print("=" * 50)
+    
+    # 测试名称到函数的映射
+    test_map = {
+        "encryption": ("基本加密功能", test_basic_encryption),
+        "discovery": ("文件发现功能", test_file_discovery),
+        "loading": ("模块加载功能", test_module_loading),
+        "integration": ("系统集成", test_system_integration),
+    }
+    
+    if test_name not in test_map:
+        print(f"❌ 未知的测试名称: {test_name}")
+        print("可用的测试:")
+        for key, (display_name, _) in test_map.items():
+            print(f"  {key}: {display_name}")
+        return False
+    
+    display_name, test_func = test_map[test_name]
+    print(f"\n📋 {display_name}")
+    print("-" * 30)
+    
+    try:
+        if test_func():
+            print(f"\n✅ 测试 '{display_name}' 通过！")
+            return True
+        else:
+            print(f"\n❌ 测试 '{display_name}' 失败！")
+            return False
+    except Exception as e:
+        print(f"  ❌ 测试异常: {e}")
+        return False
+
+
 def run_all_tests():
     """运行所有测试"""
     print("🧪 运行框架测试套件")
@@ -242,10 +281,45 @@ def run_all_tests():
         return False
 
 
-if __name__ == '__main__':
+def main():
+    """主函数，处理命令行参数"""
+    parser = argparse.ArgumentParser(
+        description="加密分发框架测试脚本",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+可用的测试:
+  encryption    基本加密功能测试
+  discovery     文件发现功能测试
+  loading       模块加载功能测试
+  integration   系统集成测试
+
+示例:
+  python test_framework.py                    # 运行所有测试
+  python test_framework.py --test encryption # 运行基本加密测试
+  python test_framework.py -t discovery      # 运行文件发现测试
+        """
+    )
+    
+    parser.add_argument(
+        '--test', '-t',
+        choices=['encryption', 'discovery', 'loading', 'integration'],
+        help='指定要运行的单个测试'
+    )
+    
+    args = parser.parse_args()
+    
     try:
-        success = run_all_tests()
+        if args.test:
+            success = run_single_test(args.test)
+        else:
+            success = run_all_tests()
+        
         sys.exit(0 if success else 1)
+        
     except KeyboardInterrupt:
         print("\n⚠️ 测试被用户中断")
         sys.exit(130)
+
+
+if __name__ == '__main__':
+    main()

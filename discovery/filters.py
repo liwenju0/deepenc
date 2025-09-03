@@ -10,7 +10,7 @@
 import os
 import fnmatch
 from pathlib import Path
-from ..core.errors import FileDiscoveryError
+from core.errors import FileDiscoveryError
 
 
 class FileFilter:
@@ -132,10 +132,17 @@ class FileFilter:
             else:
                 relative_path_str = str(path_obj)
             
-            # 检查目录排除规则
-            for exclude_dir in self.exclude_dirs:
-                if exclude_dir in path_obj.parts:
-                    return False
+            # 检查目录排除规则 - 只检查相对路径中的目录
+            if project_root:
+                relative_path_obj = Path(relative_path_str)
+                for exclude_dir in self.exclude_dirs:
+                    if exclude_dir in relative_path_obj.parts:
+                        return False
+            else:
+                # 如果没有项目根目录，检查完整路径
+                for exclude_dir in self.exclude_dirs:
+                    if exclude_dir in path_obj.parts:
+                        return False
             
             # 检查文件名排除规则
             file_name = path_obj.name

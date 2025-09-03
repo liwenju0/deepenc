@@ -6,8 +6,8 @@
 提供智能的文件扫描和过滤功能。
 """
 
-from discovery.scanner import FileScanner
-from discovery.filters import FileFilter
+from .scanner import FileScanner
+from .filters import FileFilter
 
 __all__ = [
     'FileScanner',

@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-授权和密钥管理
+授权管理器
 
-重新实现的授权系统，支持硬件授权和环境变量密钥管理。
-遵循 Linux 内核的模块化设计理念。
+提供统一的授权验证接口。
+遵循 Linux 内核的安全设计原则。
 """
 
 import os
-import ctypes
-import ctypes.util
+import hashlib
+import hmac
 from pathlib import Path
-from core.errors import AuthenticationError, LicenseError, KeyError
 
 
 class HardwareAuth:
@@ -33,8 +32,9 @@ class HardwareAuth:
     def _initialize_auth_lib(self):
         """初始化授权库"""
         try:
+            # 延迟导入，避免循环导入问题
+            from . import hexie_auth
             # 按照原项目的方式导入 hexie_auth
-            from core import hexie_auth
             self.ukey_handler = hexie_auth.Auth(self.timeout)
             print(f"✅ 成功初始化硬件授权: hexie_auth.Auth({self.timeout})")
             

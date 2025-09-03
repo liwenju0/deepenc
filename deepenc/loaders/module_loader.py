@@ -12,9 +12,9 @@ import importlib.abc
 import importlib.machinery
 import os
 from pathlib import Path
-from core.crypto import AESCrypto
-from core.auth import AuthManager
-from core.errors import LoaderError, DecryptionError
+from ..core.crypto import AESCrypto
+from ..core.auth import AuthManager
+from ..core.errors import LoaderError, DecryptionError
 
 
 class SmartModuleLoader(importlib.abc.MetaPathFinder, importlib.abc.Loader):

@@ -10,7 +10,7 @@
 import os
 import fnmatch
 from pathlib import Path
-from core.errors import FileDiscoveryError
+from ..core.errors import FileDiscoveryError
 
 
 class FileFilter:

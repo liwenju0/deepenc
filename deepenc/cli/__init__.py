@@ -6,8 +6,8 @@
 提供完善的 CLI 接口。
 """
 
-from cli.commands import EncryptCLI
-from cli.main import main
+from .commands import EncryptCLI
+from .main import main
 
 __all__ = [
     'EncryptCLI',

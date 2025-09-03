@@ -10,9 +10,9 @@
 import sys
 import os
 from pathlib import Path
-from loaders.module_loader import ModuleLoaderManager
-from loaders.onnx_loader import ONNXLoaderManager
-from core.errors import LoaderError, AuthenticationError
+from .loaders.module_loader import ModuleLoaderManager
+from .loaders.onnx_loader import ONNXLoaderManager
+from .core.errors import LoaderError, AuthenticationError
 
 
 class EncryptionSystem:

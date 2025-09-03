@@ -1,0 +1,36 @@
+# 包含所有Python文件
+include *.py
+recursive-include * *.py
+
+# 包含文档
+include README.md
+include LICENSE
+include requirements.txt
+include pyproject.toml
+
+# 包含配置文件
+include *.cfg
+include *.ini
+include *.toml
+
+# 排除不需要的文件
+exclude *.pyc
+exclude *.pyo
+exclude __pycache__
+exclude .git*
+exclude .cursor*
+exclude .vscode*
+exclude .idea*
+exclude build/
+exclude dist/
+exclude *.egg-info/
+exclude .pytest_cache/
+exclude .coverage
+exclude .mypy_cache/
+exclude .tox/
+exclude .venv/
+exclude venv/
+exclude env/
+exclude node_modules/
+exclude .DS_Store
+exclude Thumbs.db

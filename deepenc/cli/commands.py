@@ -11,10 +11,10 @@ import os
 import sys
 import json
 from pathlib import Path
-from builders.project_builder import ProjectBuilder
-from discovery.scanner import FileScanner
-from bootstrap import initialize, get_system
-from core.errors import BuildError, FileDiscoveryError
+from ..builders.project_builder import ProjectBuilder
+from ..discovery.scanner import FileScanner
+from ..bootstrap import initialize, get_system
+from ..core.errors import BuildError, FileDiscoveryError
 
 
 class EncryptCLI:
@@ -137,7 +137,7 @@ class EncryptCLI:
             os.chdir(project_root)
             
             # 尝试自动初始化
-            from bootstrap import auto_initialize
+            from ..bootstrap import auto_initialize
             system = auto_initialize()
             
             if system:

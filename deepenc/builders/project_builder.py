@@ -12,10 +12,10 @@ import shutil
 import json
 from pathlib import Path
 from datetime import datetime
-from discovery.scanner import FileScanner
-from core.crypto import AESCrypto
-from core.auth import AuthManager
-from core.errors import BuildError
+from ..discovery.scanner import FileScanner
+from ..core.crypto import AESCrypto
+from ..core.auth import AuthManager
+from ..core.errors import BuildError
 
 
 class ProjectBuilder:

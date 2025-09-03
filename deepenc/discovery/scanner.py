@@ -10,8 +10,8 @@
 import os
 import glob
 from pathlib import Path
-from discovery.filters import FileFilter
-from core.errors import FileDiscoveryError
+from .filters import FileFilter
+from ..core.errors import FileDiscoveryError
 
 
 class FileScanner:

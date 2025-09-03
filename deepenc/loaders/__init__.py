@@ -6,8 +6,8 @@
 提供智能的模块和模型加载功能。
 """
 
-from loaders.module_loader import SmartModuleLoader
-from loaders.onnx_loader import SmartONNXLoader
+from .module_loader import SmartModuleLoader
+from .onnx_loader import SmartONNXLoader
 
 __all__ = [
     'SmartModuleLoader',

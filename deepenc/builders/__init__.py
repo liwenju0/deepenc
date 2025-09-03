@@ -6,8 +6,8 @@
 提供项目构建和打包功能。
 """
 
-from builders.project_builder import ProjectBuilder
-from builders.packager import ProjectPackager
+from .project_builder import ProjectBuilder
+from .packager import ProjectPackager
 
 __all__ = [
     'ProjectBuilder',

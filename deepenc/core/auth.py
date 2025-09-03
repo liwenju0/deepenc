@@ -11,6 +11,7 @@ import os
 import hashlib
 import hmac
 from pathlib import Path
+from .errors import AuthenticationError
 
 
 class HardwareAuth:

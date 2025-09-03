@@ -170,9 +170,13 @@ class EncryptCLI:
             
             print(f"🧹 清理构建目录: {build_dir}")
             
-            # 创建项目构建器
-            builder = ProjectBuilder(project_root, build_dir)
-            builder.clean_build()
+            # 直接清理构建目录，避免创建 ProjectBuilder 实例
+            if build_dir.exists():
+                import shutil
+                shutil.rmtree(build_dir)
+                print(f"✅ 已清理构建目录: {build_dir}")
+            else:
+                print("ℹ️ 构建目录不存在，无需清理")
             
             return 0
             

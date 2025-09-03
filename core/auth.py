@@ -11,7 +11,7 @@ import os
 import ctypes
 import ctypes.util
 from pathlib import Path
-from .errors import AuthenticationError, LicenseError, KeyError
+from core.errors import AuthenticationError, LicenseError, KeyError
 
 
 class HardwareAuth:
@@ -34,7 +34,7 @@ class HardwareAuth:
         """初始化授权库"""
         try:
             # 按照原项目的方式导入 hexie_auth
-            from . import hexie_auth
+            from core import hexie_auth
             self.ukey_handler = hexie_auth.Auth(self.timeout)
             print(f"✅ 成功初始化硬件授权: hexie_auth.Auth({self.timeout})")
             

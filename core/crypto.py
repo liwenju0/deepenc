@@ -8,7 +8,7 @@ AES 加密实现
 """
 
 import os
-from .errors import EncryptionError, DecryptionError
+from core.errors import EncryptionError, DecryptionError
 
 try:
     from Crypto.Cipher import AES

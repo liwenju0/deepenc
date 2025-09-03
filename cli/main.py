@@ -10,7 +10,7 @@ CLI 主入口
 import sys
 import argparse
 from pathlib import Path
-from .commands import EncryptCLI
+from cli.commands import EncryptCLI
 
 
 def create_parser():

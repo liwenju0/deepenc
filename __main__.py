@@ -6,7 +6,7 @@
 支持 python -m encrypt 的调用方式。
 """
 
-from .cli.main import main
+from cli.main import main
 
 if __name__ == '__main__':
     exit(main())

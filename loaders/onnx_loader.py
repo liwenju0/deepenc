@@ -11,9 +11,9 @@ import os
 import tempfile
 import atexit
 from pathlib import Path
-from ..core.crypto import AESCrypto
-from ..core.auth import AuthManager
-from ..core.errors import LoaderError, DecryptionError
+from core.crypto import AESCrypto
+from core.auth import AuthManager
+from core.errors import LoaderError, DecryptionError
 
 try:
     import onnxruntime as ort

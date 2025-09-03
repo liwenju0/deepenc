@@ -29,9 +29,9 @@ __author__ = "AI Assistant"
 __license__ = "MIT"
 
 # 导出主要接口
-from .bootstrap import bootstrap, initialize
-from .core import EncryptionError, AuthenticationError
-from .builders.project_builder import ProjectBuilder
+from bootstrap import bootstrap, initialize
+from core import EncryptionError, AuthenticationError
+from builders.project_builder import ProjectBuilder
 
 # 设置默认的日志级别
 import logging

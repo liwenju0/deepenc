@@ -10,7 +10,7 @@ import os
 import zipfile
 import shutil
 from pathlib import Path
-from ..core.errors import BuildError
+from core.errors import BuildError
 
 
 class ProjectPackager:

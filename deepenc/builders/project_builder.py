@@ -55,16 +55,22 @@ class BuildConstants:
 class ProjectBuilder:
     """简化的项目构建器"""
     
-    def __init__(self, project_root=None, build_dir=None):
+    def __init__(self, project_root=None, build_dir=None, exclude_dirs=None, exclude_files=None):
         """初始化项目构建器
         
         Args:
             project_root: 项目根目录
             build_dir: 构建输出目录
+            exclude_dirs: 要排除的目录列表
+            exclude_files: 要排除的文件列表
         """
         # 路径设置
         self.project_root = Path(project_root or '.').resolve()
         self.build_dir = Path(build_dir or self.project_root / BuildConstants.BUILD_DIR_NAME).resolve()
+        
+        # 排除规则
+        self.exclude_dirs = set(exclude_dirs or [])
+        self.exclude_files = set(exclude_files or [])
         
         # 初始化核心组件
         self.scanner = FileScanner(self.project_root)
@@ -78,6 +84,10 @@ class ProjectBuilder:
         self.logger.info("项目构建器初始化完成")
         self.logger.info(f"项目根目录: {self.project_root}")
         self.logger.info(f"构建目录: {self.build_dir}")
+        if self.exclude_dirs:
+            self.logger.info(f"排除目录: {', '.join(self.exclude_dirs)}")
+        if self.exclude_files:
+            self.logger.info(f"排除文件: {', '.join(self.exclude_files)}")
     
     def _setup_logging(self):
         """设置日志配置"""
@@ -165,15 +175,22 @@ class ProjectBuilder:
         """判断是否应该复制项目项"""
         item_name = item.name
         
-        # 检查是否在排除目录列表中
+        # 检查是否在命令行指定的排除目录列表中
+        if item_name in self.exclude_dirs:
+            self.logger.debug(f"排除目录: {item_name}")
+            return False
+        
+        # 检查是否在默认排除目录列表中
         for excluded_dir in BuildConstants.EXCLUDED_COPY_DIRS:
             if excluded_dir.startswith('*'):
                 # 通配符模式
                 if item_name.endswith(excluded_dir[1:]):
+                    self.logger.debug(f"排除目录(默认): {item_name}")
                     return False
             else:
                 # 精确匹配
                 if item_name == excluded_dir:
+                    self.logger.debug(f"排除目录(默认): {item_name}")
                     return False
         
         # 不复制构建目录本身

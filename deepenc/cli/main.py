@@ -28,6 +28,9 @@ def create_parser():
   deepenc build                                    # 构建当前项目
   deepenc build --project /path                   # 构建指定项目
   deepenc build --entry-point src/main.py         # 指定入口文件
+  deepenc build -x tests -x docs                  # 排除tests和docs目录
+  deepenc build -x .git -x __pycache__            # 排除版本控制和缓存目录
+  deepenc build -xf *.log -xf *.tmp               # 排除日志和临时文件
   deepenc scan                                     # 扫描当前项目
   deepenc status                                   # 显示系统状态
   deepenc clean                                    # 清理构建目录
@@ -74,6 +77,16 @@ def create_parser():
     build_parser.add_argument(
         '--entry-point', '-e',
         help='项目入口Python文件 (默认: src/grpc_main.py)'
+    )
+    build_parser.add_argument(
+        '--exclude-dir', '-x',
+        action='append',
+        help='排除指定目录，不纳入到build中 (可多次使用)'
+    )
+    build_parser.add_argument(
+        '--exclude-file', '-xf',
+        action='append',
+        help='排除指定文件，不纳入到build中 (可多次使用)'
     )
     build_parser.add_argument(
         '--no-clean',
@@ -168,6 +181,8 @@ def main():
                 project_path=args.project,
                 output_dir=args.output,
                 entry_point=args.entry_point,
+                exclude_dirs=args.exclude_dir,
+                exclude_files=args.exclude_file,
                 clean=not args.no_clean,
                 verbose=args.verbose
             )

@@ -72,10 +72,6 @@ def test_basic_encryption():
 def test_file_discovery():
     """测试文件发现功能"""
     print("🔍 测试文件发现功能...")
-    print("  ⚠️  跳过文件发现测试（需要进一步优化）")
-    return True
-    """测试文件发现功能"""
-    print("🔍 测试文件发现功能...")
     
     try:
         from discovery.scanner import FileScanner

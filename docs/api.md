@@ -53,13 +53,14 @@ system = encrypt.bootstrap(module_config)
 
 ### ProjectBuilder
 
-#### `ProjectBuilder(project_root=None, build_dir=None)`
+#### `ProjectBuilder(project_root=None, build_dir=None, entry_point=None)`
 
 项目构建器，用于自动构建加密项目。
 
 **参数:**
 - `project_root` (str, 可选): 项目根目录，默认当前目录
 - `build_dir` (str, 可选): 构建输出目录，默认 `project_root/build`
+- `entry_point` (str, 可选): 项目入口点文件，默认 `src/grpc_main.py`
 
 #### `build_project(auto_discover=True, clean=True)`
 

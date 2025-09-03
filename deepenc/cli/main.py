@@ -20,19 +20,20 @@ def create_parser():
         argparse.ArgumentParser: 命令行解析器
     """
     parser = argparse.ArgumentParser(
-        prog='encrypt',
+        prog='deepenc',
         description='Python 项目加密分发框架',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 示例:
-  encrypt build                    # 构建当前项目
-  encrypt build --project /path   # 构建指定项目
-  encrypt scan                     # 扫描当前项目
-  encrypt status                   # 显示系统状态
-  encrypt clean                    # 清理构建目录
-  encrypt verify                   # 验证构建结果
+  deepenc build                                    # 构建当前项目
+  deepenc build --project /path                   # 构建指定项目
+  deepenc build --entry-point src/main.py         # 指定入口文件
+  deepenc scan                                     # 扫描当前项目
+  deepenc status                                   # 显示系统状态
+  deepenc clean                                    # 清理构建目录
+  deepenc verify                                   # 验证构建结果
 
-更多信息请访问: https://github.com/your-repo/encrypt
+更多信息请访问: https://github.com/your-repo/deepenc
         """
     )
     
@@ -69,6 +70,10 @@ def create_parser():
     build_parser.add_argument(
         '--output', '-o',
         help='输出目录 (默认: PROJECT/build)'
+    )
+    build_parser.add_argument(
+        '--entry-point', '-e',
+        help='项目入口Python文件 (默认: src/grpc_main.py)'
     )
     build_parser.add_argument(
         '--no-clean',
@@ -162,6 +167,7 @@ def main():
             return cli.build(
                 project_path=args.project,
                 output_dir=args.output,
+                entry_point=args.entry_point,
                 clean=not args.no_clean,
                 verbose=args.verbose
             )

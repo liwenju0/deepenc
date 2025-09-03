@@ -27,12 +27,13 @@ class EncryptCLI:
         """初始化 CLI"""
         self.project_root = Path.cwd()
     
-    def build(self, project_path=None, output_dir=None, clean=True, verbose=False):
+    def build(self, project_path=None, output_dir=None, entry_point=None, clean=True, verbose=False):
         """构建加密项目
         
         Args:
             project_path: 项目路径，默认当前目录
             output_dir: 输出目录，默认 project_path/build
+            entry_point: 项目入口Python文件，默认src/grpc_main.py
             clean: 是否清理构建目录
             verbose: 是否显示详细信息
             
@@ -46,9 +47,11 @@ class EncryptCLI:
             print(f"🔨 构建加密项目")
             print(f"📁 项目路径: {project_root}")
             print(f"🏗️ 输出目录: {build_dir}")
+            if entry_point:
+                print(f"🚪 项目入口: {entry_point}")
             
             # 创建项目构建器
-            builder = ProjectBuilder(project_root, build_dir)
+            builder = ProjectBuilder(project_root, build_dir, entry_point)
             
             # 构建项目
             build_report = builder.build_project(auto_discover=True, clean=clean)

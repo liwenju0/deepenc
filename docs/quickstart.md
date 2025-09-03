@@ -7,10 +7,16 @@
 ```bash
 # 在您的项目根目录执行
 cd /path/to/your/project
-python -m encrypt build
+python -m deepenc build
+
+# 指定自定义入口文件
+python -m deepenc build --entry-point src/main.py
 
 # 或者指定项目路径
-python -m encrypt build --project /path/to/your/project
+python -m deepenc build --project /path/to/your/project
+
+# 指定项目和入口文件
+python -m deepenc build --project /path/to/project --entry-point src/app.py
 ```
 
 ### 2. 运行加密项目
@@ -19,8 +25,11 @@ python -m encrypt build --project /path/to/your/project
 # 进入构建目录
 cd build
 
-# 运行项目
-python run.py
+# 运行项目（使用默认入口文件）
+python src/grpc_main.py
+
+# 或者使用自定义入口文件
+python main.py
 ```
 
 ### 3. 开发者无感知使用
@@ -33,6 +42,20 @@ from src import grpc_main, nsfw_image_censor
 # 系统会自动处理加密/解密
 session = ort.InferenceSession('model/eros/eros.onnx')  # 自动解密
 grpc_main.start_server()                                # 自动解密导入
+```
+
+### 4. 新功能：自定义入口文件
+
+```bash
+# 支持指定项目入口文件，入口文件不会被加密
+python -m deepenc build --entry-point src/main.py
+
+# 构建后的目录结构
+build/
+├── main.py                    # 入口文件（未加密）
+├── conf/                      # 配置文件目录
+├── config/                    # 加密配置
+└── encrypted/                 # 加密文件
 ```
 
 ## 🔧 环境准备

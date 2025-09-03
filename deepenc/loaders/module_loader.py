@@ -100,6 +100,8 @@ class SmartModuleLoader(importlib.abc.MetaPathFinder, importlib.abc.Loader):
         try:
             # 检查缓存
             if module_name in self._cache:
+                # 设置重要的模块属性
+                self._setup_module_attributes(module, module_name)
                 exec(self._cache[module_name], module.__dict__)
                 return module
             
@@ -114,6 +116,9 @@ class SmartModuleLoader(importlib.abc.MetaPathFinder, importlib.abc.Loader):
             # 缓存解密后的内容
             self._cache[module_name] = decrypted_content
             
+            # 设置重要的模块属性
+            self._setup_module_attributes(module, module_name, encrypted_file)
+            
             # 执行解密后的代码
             exec(decrypted_content, module.__dict__)
             print(f"✅ 成功加载加密模块: {module_name}")
@@ -122,6 +127,71 @@ class SmartModuleLoader(importlib.abc.MetaPathFinder, importlib.abc.Loader):
             
         except Exception as e:
             raise LoaderError(f"执行模块失败 {module_name}: {e}")
+    
+    def _setup_module_attributes(self, module, module_name, encrypted_file_path=None):
+        """设置模块的重要属性
+        
+        确保加密模块具有与普通模块相同的属性。
+        
+        Args:
+            module: 模块对象
+            module_name: 模块名称
+            encrypted_file_path: 加密文件路径
+        """
+        # 设置 __file__ 属性
+        if encrypted_file_path:
+            module.__file__ = encrypted_file_path
+        else:
+            # 尝试从模块名推断文件路径
+            possible_paths = self._module_name_to_paths(module_name)
+            for path in possible_paths:
+                if os.path.exists(path + '.py'):
+                    module.__file__ = path + '.py'
+                    break
+                elif os.path.exists(path + '.encrypted'):
+                    module.__file__ = path + '.encrypted'
+                    break
+            else:
+                # 如果都找不到，设置一个合理的默认值
+                module.__file__ = f"<encrypted:{module_name}>"
+        
+        # 设置 __name__ 属性
+        module.__name__ = module_name
+        
+        # 设置 __package__ 属性
+        if '.' in module_name:
+            module.__package__ = '.'.join(module_name.split('.')[:-1])
+        else:
+            module.__package__ = ""
+        
+        # 设置 __spec__ 属性（如果可能）
+        try:
+            module.__spec__ = importlib.machinery.ModuleSpec(
+                module_name,
+                self,
+                origin=module.__file__
+            )
+        except:
+            pass
+        
+        # 设置 __cached__ 属性
+        if encrypted_file_path:
+            module.__cached__ = encrypted_file_path
+        else:
+            module.__cached__ = None
+        
+        # 设置其他重要的模块属性
+        module.__loader__ = self
+        module.__path__ = None  # 对于非包模块
+        
+        # 如果是包模块，尝试设置 __path__
+        if '.' in module_name:
+            try:
+                package_path = os.path.dirname(module.__file__)
+                if os.path.isdir(package_path):
+                    module.__path__ = [package_path]
+            except:
+                pass
     
     def _discover_encrypted_version(self, module_name):
         """自动发现加密版本

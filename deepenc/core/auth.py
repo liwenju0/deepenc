@@ -18,6 +18,7 @@ class HardwareAuth:
     """硬件授权实现
     
     完全按照原项目 io_util.py 的实现方式。
+    采用动态加载器避免循环导入问题。
     """
     
     def __init__(self, timeout=10):
@@ -31,18 +32,27 @@ class HardwareAuth:
         self._initialize_auth_lib()
     
     def _initialize_auth_lib(self):
-        """初始化授权库"""
+        """初始化授权库
+        
+        采用动态加载器方式，避免循环导入问题。
+        """
         try:
-            # 延迟导入，避免循环导入问题
-            from . import hexie_auth
-            # 按照原项目的方式导入 hexie_auth
-            self.ukey_handler = hexie_auth.Auth(self.timeout)
-            print(f"✅ 成功初始化硬件授权: hexie_auth.Auth({self.timeout})")
+            # 使用动态加载器获取 Auth 类
+            from .hexie_auth_loader import get_auth_class
             
+            AuthClass = get_auth_class()
+            if AuthClass:
+                # 按照原项目的方式创建 Auth 实例
+                self.ukey_handler = AuthClass(self.timeout)
+                print(f"✅ 成功初始化硬件授权: hexie_auth.Auth({self.timeout})")
+            else:
+                print("❌ 无法获取 Auth 类")
+                self.ukey_handler = None
+                
         except Exception as err:
             import traceback
-            print(traceback.format_exc())
-            print(f"Failed to import hexie_auth: {err}. Ukey is not available! {traceback.format_exc()}")
+            print(f"❌ 初始化硬件授权失败: {err}")
+            print(f"详细错误信息: {traceback.format_exc()}")
             self.ukey_handler = None
 
     

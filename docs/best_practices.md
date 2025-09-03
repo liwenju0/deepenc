@@ -98,114 +98,289 @@ docs/                   # ❌ 不加密
 ```python
 # ✅ 推荐的模型组织方式
 model/
-├── eros/
-│   ├── eros.onnx           # 原始模型
-│   ├── eros.onnx.encrypt   # 加密模型
-│   └── config.pbtxt        # 配置文件
-├── mars/
+├── eros/               # 按功能分组
+│   ├── eros.onnx
+│   └── config.json
+├── mars/               # 按功能分组
 │   ├── mars.onnx
-│   ├── mars.onnx.encrypt
-│   └── config.pbtxt
+│   └── config.json
+└── shared/             # 共享模型
+    └── common.onnx
+```
+
+## 🚀 系统初始化最佳实践
+
+### 1. 自动初始化（推荐）
+
+```python
+# ✅ 推荐做法：自动初始化
+import deepenc
+
+# 系统会自动查找配置文件
+system = deepenc.auto_initialize()
+
+# 如果自动初始化失败，使用快速启动
+if not system:
+    system = deepenc.quick_start()
+
+# 现在可以正常导入
+from src import main
+```
+
+**优势:**
+- 零配置，开箱即用
+- 自动发现配置文件
+- 智能降级机制
+- 适合开发和测试环境
+
+### 2. 手动配置（生产环境）
+
+```python
+# ✅ 生产环境：手动配置
+import deepenc
+
+# 明确的模块映射
+module_config = {
+    'src.main': 'encrypted/python/src/main.py.encrypted',
+    'src.detector': 'encrypted/python/src/detector.py.encrypted',
+    'src.classifier': 'encrypted/python/src/classifier.py.encrypted'
+}
+
+# 初始化系统
+system = deepenc.initialize(module_config)
+
+# 验证系统状态
+if not deepenc.is_initialized():
+    raise RuntimeError("加密系统初始化失败")
+```
+
+**优势:**
+- 配置明确，便于管理
+- 性能可预测
+- 便于调试和监控
+- 适合生产环境
+
+### 3. 生命周期管理
+
+```python
+# ✅ 完整的生命周期管理
+import deepenc
+import atexit
+
+def cleanup():
+    """清理资源"""
+    if deepenc.is_initialized():
+        deepenc.shutdown()
+
+# 注册清理函数
+atexit.register(cleanup)
+
+try:
+    # 启动系统
+    system = deepenc.bootstrap()
+    
+    # 使用系统
+    from src import main
+    main.run()
+    
+finally:
+    # 确保清理
+    cleanup()
+```
+
+## 🔧 构建最佳实践
+
+### 1. 构建流程优化
+
+```bash
+# ✅ 推荐的构建流程
+# 1. 清理环境
+python -m deepenc clean
+
+# 2. 扫描项目
+python -m deepenc scan --format json
+
+# 3. 构建项目
+python -m deepenc build --entry-point src/main.py
+
+# 4. 验证构建结果
+python -m deepenc verify
+```
+
+### 2. 自定义过滤规则
+
+```python
+# ✅ 自定义过滤规则
+from deepenc.builders import ProjectBuilder
+from deepenc.discovery import FileFilter
+
+# 创建过滤器
+filter_rules = {
+    'exclude_dirs': [
+        'tests',           # 测试目录
+        'docs',            # 文档目录
+        'examples',        # 示例目录
+        '__pycache__',     # Python缓存
+        '.git'             # Git目录
+    ],
+    'exclude_files': [
+        '*.pyc',           # Python字节码
+        '*.pyo',           # Python优化字节码
+        '*.log',           # 日志文件
+        'config.py',       # 配置文件
+        'setup.py'         # 安装脚本
+    ],
+    'include_files': [
+        'src/main.py',     # 强制包含
+        'src/core.py'      # 强制包含
+    ]
+}
+
+# 应用过滤器
+builder = ProjectBuilder()
+builder.scanner.file_filter = FileFilter(filter_rules)
+```
+
+### 3. 构建配置管理
+
+```python
+# ✅ 构建配置管理
+import json
+from pathlib import Path
+
+# 构建配置
+build_config = {
+    'project_root': '/path/to/project',
+    'build_dir': '/path/to/build',
+    'entry_point': 'src/main.py',
+    'exclude_patterns': [
+        'tests/**',
+        'docs/**',
+        '*.pyc'
+    ],
+    'encryption_settings': {
+        'algorithm': 'AES-CFB',
+        'key_length': 256,
+        'partial_encryption': True,
+        'max_encrypt_size': 10 * 1024 * 1024  # 10MB
+    }
+}
+
+# 保存配置
+config_path = Path('build_config.json')
+with open(config_path, 'w') as f:
+    json.dump(build_config, f, indent=2)
 ```
 
 ## 🔐 安全最佳实践
 
 ### 1. 密钥管理
 
-#### 生产环境
+```python
+# ✅ 安全的密钥管理
+import os
+from pathlib import Path
+
+# 环境变量方式（开发环境）
+os.environ['ENCRYPTION_KEY'] = 'your-16-char-key'
+
+# 许可证文件方式（生产环境）
+license_path = Path('/data/appdatas/inference/license.dat')
+if license_path.exists():
+    with open(license_path, 'r') as f:
+        license_content = f.read().strip()
+    os.environ['AUTH_CODE'] = license_content
+
+# 硬件授权方式（最高安全）
+os.environ['AUTH_MODE'] = 'PROD'
+```
+
+### 2. 文件权限管理
 
 ```bash
-# ✅ 使用硬件授权
-export AUTH_MODE="PROD"
+# ✅ 安全的文件权限
+# 构建目录权限
+chmod 755 build/
+chmod 644 build/config/*.json
+chmod 600 build/config/encryption_config.json
 
-# ✅ 或者使用安全的许可证文件
-echo "secure-license-content" > /data/appdatas/inference/license.dat
+# 运行时目录权限
+chmod 755 /data/appdatas/inference/
 chmod 600 /data/appdatas/inference/license.dat
 ```
 
-#### 开发环境
-
-```bash
-# ✅ 使用环境变量
-export ENCRYPTION_KEY="dev-key-16chars"
-export AUTH_MODE="DEV"
-
-# ✅ 或者使用本地许可证文件
-echo "dev-license-content" > ./license.dat
-```
-
-#### 密钥轮换
+### 3. 网络安全
 
 ```python
-# 定期更新密钥
-def rotate_encryption_key():
-    # 1. 生成新密钥
-    new_key = generate_new_key()
+# ✅ 网络安全配置
+# 避免在日志中记录敏感信息
+import logging
+
+class SecureFormatter(logging.Formatter):
+    def format(self, record):
+        # 过滤敏感信息
+        if hasattr(record, 'msg'):
+            record.msg = self._filter_sensitive(record.msg)
+        return super().format(record)
     
-    # 2. 重新加密所有文件
-    builder = ProjectBuilder()
-    builder.rebuild_with_new_key(new_key)
-    
-    # 3. 更新配置
-    update_key_config(new_key)
+    def _filter_sensitive(self, msg):
+        # 过滤密钥、路径等敏感信息
+        sensitive_patterns = [
+            r'ENCRYPTION_KEY=\w+',
+            r'/data/appdatas/inference/',
+            r'license\.dat'
+        ]
+        # 实现过滤逻辑
+        return msg
+
+# 应用安全格式化器
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 ```
 
-### 2. 文件权限
-
-```bash
-# 设置适当的文件权限
-chmod 600 license.dat              # 许可证文件只有所有者可读写
-chmod 644 *.py.encrypted          # 加密文件只读
-chmod 755 build/run.py            # 启动脚本可执行
-```
-
-### 3. 安全清理
-
-```python
-# 构建后自动清理敏感文件
-def secure_cleanup():
-    # 删除原始源码文件
-    for py_file in source_files:
-        os.remove(py_file)
-    
-    # 删除原始模型文件
-    for onnx_file in model_files:
-        os.remove(onnx_file)
-    
-    # 清理构建缓存
-    shutil.rmtree('__pycache__', ignore_errors=True)
-```
-
-## ⚡ 性能最佳实践
+## 📊 性能优化最佳实践
 
 ### 1. 缓存策略
 
 ```python
-# ✅ 启用智能缓存
-system = encrypt.bootstrap()
+# ✅ 缓存优化
+import deepenc
 
-# 预加载关键模块
-critical_modules = ['src.main', 'src.detector']
-for module in critical_modules:
-    __import__(module)  # 触发解密和缓存
+# 启动系统
+system = deepenc.bootstrap()
+
+# 预热缓存
+def warm_up_cache():
+    """预热常用模块的缓存"""
+    try:
+        from src import detector, classifier
+        print("缓存预热完成")
+    except ImportError as e:
+        print(f"缓存预热失败: {e}")
 
 # 定期清理缓存
-import threading
-def cache_cleanup():
+import time
+def cache_maintenance():
+    """定期维护缓存"""
     while True:
-        time.sleep(3600)  # 每小时清理一次
-        system.clear_caches()
-
-threading.Thread(target=cache_cleanup, daemon=True).start()
+        time.sleep(3600)  # 每小时
+        if deepenc.is_initialized():
+            system = deepenc.get_system()
+            system.clear_caches()
+            print("缓存已清理")
 ```
 
 ### 2. 内存管理
 
 ```python
-# ✅ 监控内存使用
+# ✅ 内存管理
+import gc
 import psutil
 
 def monitor_memory():
+    """监控内存使用"""
     process = psutil.Process()
     memory_info = process.memory_info()
     
@@ -213,84 +388,208 @@ def monitor_memory():
     
     # 如果内存使用过高，清理缓存
     if memory_info.rss > 500 * 1024 * 1024:  # 500MB
-        encrypt.get_system().clear_caches()
+        if deepenc.is_initialized():
+            system = deepenc.get_system()
+            system.clear_caches()
+            gc.collect()
+            print("内存已清理")
+
+# 定期监控
+import threading
+def start_memory_monitor():
+    """启动内存监控"""
+    def monitor():
+        while True:
+            monitor_memory()
+            time.sleep(300)  # 每5分钟
+    
+    thread = threading.Thread(target=monitor, daemon=True)
+    thread.start()
 ```
 
-### 3. 启动优化
+### 3. 并发处理
 
 ```python
-# ✅ 延迟初始化
-class LazyInitializer:
-    def __init__(self):
-        self._system = None
+# ✅ 并发处理
+import concurrent.futures
+from deepenc import bootstrap
+
+def process_batch(items):
+    """批量处理"""
+    # 启动系统
+    system = bootstrap()
     
-    @property
-    def system(self):
-        if self._system is None:
-            self._system = encrypt.bootstrap()
-        return self._system
-
-# 全局延迟初始化
-lazy_encrypt = LazyInitializer()
-
-def get_model():
-    # 只有在实际使用时才初始化
-    return lazy_encrypt.system.load_model('model.onnx')
+    def process_item(item):
+        try:
+            from src import processor
+            return processor.process(item)
+        except Exception as e:
+            return f"处理失败: {e}"
+    
+    # 使用线程池
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        futures = [executor.submit(process_item, item) for item in items]
+        results = [future.result() for future in concurrent.futures.as_completed(futures)]
+    
+    return results
 ```
 
-### 4. 入口点文件管理
+## 🧪 测试最佳实践
+
+### 1. 单元测试
 
 ```python
-# ✅ 推荐做法：清晰的入口点结构
-# src/main.py - 主入口点
-def main():
-    """应用程序主入口点"""
-    # 初始化加密系统
-    import deepenc
-    deepenc.bootstrap()
+# ✅ 单元测试
+import unittest
+from unittest.mock import patch, MagicMock
+import deepenc
+
+class TestDeepEnc(unittest.TestCase):
     
-    # 导入业务模块
-    from .grpc_main import start_server
-    from .models import load_models
+    def setUp(self):
+        """测试前准备"""
+        # 清理之前的系统
+        if deepenc.is_initialized():
+            deepenc.shutdown()
     
-    # 启动服务
-    start_server()
+    def tearDown(self):
+        """测试后清理"""
+        if deepenc.is_initialized():
+            deepenc.shutdown()
+    
+    def test_auto_initialize(self):
+        """测试自动初始化"""
+        with patch('pathlib.Path.exists', return_value=False):
+            system = deepenc.auto_initialize()
+            self.assertIsNotNone(system)
+    
+    def test_manual_initialize(self):
+        """测试手动初始化"""
+        module_config = {'test.module': 'test/path'}
+        system = deepenc.initialize(module_config)
+        self.assertIsNotNone(system)
+    
+    def test_system_lifecycle(self):
+        """测试系统生命周期"""
+        # 启动
+        system = deepenc.bootstrap()
+        self.assertTrue(deepenc.is_initialized())
+        
+        # 关闭
+        deepenc.shutdown()
+        self.assertFalse(deepenc.is_initialized())
 
 if __name__ == '__main__':
-    main()
-
-# ✅ 推荐做法：分离服务入口点
-# src/grpc_main.py - gRPC服务入口点
-def start_server():
-    """启动gRPC服务"""
-    # gRPC服务逻辑
-    pass
-
-# ✅ 推荐做法：CLI入口点
-# src/cli.py - 命令行工具入口点
-def cli_main():
-    """命令行工具主入口点"""
-    # CLI逻辑
-    pass
+    unittest.main()
 ```
 
-#### 入口点文件最佳实践
+### 2. 集成测试
 
-1. **命名规范**: 使用描述性名称，如 `main.py`, `app.py`, `server.py`
-2. **功能分离**: 不同功能使用不同的入口点文件
-3. **依赖管理**: 确保入口点文件不依赖其他未加密的模块
-4. **权限设置**: 构建后的入口点文件自动具有执行权限
+```python
+# ✅ 集成测试
+import tempfile
+import shutil
+from pathlib import Path
+from deepenc.builders import ProjectBuilder
 
-```bash
-# 构建时指定入口点
-python -m deepenc build --entry-point src/main.py
+class TestIntegration(unittest.TestCase):
+    
+    def setUp(self):
+        """创建临时测试环境"""
+        self.test_dir = Path(tempfile.mkdtemp())
+        self.build_dir = self.test_dir / 'build'
+        
+        # 创建测试项目结构
+        self._create_test_project()
+    
+    def tearDown(self):
+        """清理测试环境"""
+        shutil.rmtree(self.test_dir)
+    
+    def _create_test_project(self):
+        """创建测试项目"""
+        # 创建源码目录
+        src_dir = self.test_dir / 'src'
+        src_dir.mkdir()
+        
+        # 创建测试文件
+        (src_dir / '__init__.py').write_text('')
+        (src_dir / 'main.py').write_text('print("Hello, World!")')
+        
+        # 创建模型目录
+        model_dir = self.test_dir / 'model'
+        model_dir.mkdir()
+        (model_dir / 'test.onnx').write_text('fake onnx content')
+    
+    def test_full_build_and_run(self):
+        """测试完整的构建和运行流程"""
+        # 构建项目
+        builder = ProjectBuilder(
+            project_root=str(self.test_dir),
+            build_dir=str(self.build_dir)
+        )
+        
+        report = builder.build_project()
+        self.assertTrue(report['build_info']['success'])
+        
+        # 验证构建结果
+        self.assertTrue((self.build_dir / 'src' / 'main.py').exists())
+        self.assertTrue((self.build_dir / 'model' / 'test.onnx.encrypt').exists())
+```
 
-# 构建后的目录结构
-build/
-├── main.py                    # 入口点文件（未加密）
-├── conf/                      # 配置文件目录
-├── config/                    # 加密配置
-└── encrypted/                 # 加密文件
+### 3. 性能测试
+
+```python
+# ✅ 性能测试
+import time
+import statistics
+from deepenc import bootstrap
+
+class TestPerformance(unittest.TestCase):
+    
+    def test_initialization_performance(self):
+        """测试初始化性能"""
+        times = []
+        
+        for _ in range(10):
+            start_time = time.time()
+            system = bootstrap()
+            end_time = time.time()
+            
+            times.append(end_time - start_time)
+            deepenc.shutdown()
+        
+        avg_time = statistics.mean(times)
+        max_time = max(times)
+        
+        print(f"平均初始化时间: {avg_time:.3f}s")
+        print(f"最大初始化时间: {max_time:.3f}s")
+        
+        # 性能要求：平均时间 < 100ms
+        self.assertLess(avg_time, 0.1)
+    
+    def test_module_import_performance(self):
+        """测试模块导入性能"""
+        system = bootstrap()
+        
+        try:
+            # 测试导入性能
+            import_times = []
+            
+            for _ in range(100):
+                start_time = time.time()
+                # 这里应该导入一个测试模块
+                end_time = time.time()
+                import_times.append(end_time - start_time)
+            
+            avg_import_time = statistics.mean(import_times)
+            print(f"平均导入时间: {avg_import_time:.3f}s")
+            
+            # 性能要求：平均导入时间 < 50ms
+            self.assertLess(avg_import_time, 0.05)
+            
+        finally:
+            deepenc.shutdown()
 ```
 
 ## 🚀 部署最佳实践
@@ -298,446 +597,184 @@ build/
 ### 1. 容器化部署
 
 ```dockerfile
-# Dockerfile
-FROM python:3.8-slim
+# ✅ Dockerfile 最佳实践
+FROM python:3.9-slim
 
-# 安装依赖
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-# 复制加密项目
-COPY build/ /app/
+# 设置工作目录
 WORKDIR /app
 
+# 安装系统依赖
+RUN apt-get update && apt-get install -y \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# 复制依赖文件
+COPY requirements.txt .
+
+# 安装 Python 依赖
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 复制加密项目
+COPY build/ .
+
 # 设置环境变量
-ENV AUTH_MODE=PROD
+ENV PYTHONPATH=/app
 ENV ENCRYPTION_KEY=your-production-key
 
+# 创建非 root 用户
+RUN useradd --create-home --shell /bin/bash app \
+    && chown -R app:app /app
+USER app
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD python -c "import deepenc; print('OK')" || exit 1
+
 # 启动应用
-CMD ["python", "run.py"]
+CMD ["python", "main.py"]
 ```
 
-### 2. 环境隔离
-
-```bash
-# 生产环境
-export AUTH_MODE="PROD"
-export ENCRYPTION_KEY="prod-key-32-characters-long"
-
-# 测试环境  
-export AUTH_MODE="TEST"
-export ENCRYPTION_KEY="test-key-32-characters-long"
-
-# 开发环境
-export AUTH_MODE="DEV"
-export ENCRYPTION_KEY="dev-key-16-chars"
-```
-
-### 3. 健康检查
-
-```python
-# health_check.py
-import encrypt
-
-def health_check():
-    """健康检查"""
-    try:
-        # 检查系统状态
-        system = encrypt.get_system()
-        if not system:
-            return False, "系统未初始化"
-        
-        status = system.get_status()
-        if not status['initialized']:
-            return False, "系统初始化失败"
-        
-        # 检查关键组件
-        if not status['module_loader_installed']:
-            return False, "模块加载器未安装"
-        
-        # 尝试导入关键模块
-        try:
-            import src.main
-            return True, "系统正常"
-        except ImportError as e:
-            return False, f"关键模块导入失败: {e}"
-        
-    except Exception as e:
-        return False, f"健康检查失败: {e}"
-
-if __name__ == '__main__':
-    is_healthy, message = health_check()
-    print(f"健康状态: {'✅ 正常' if is_healthy else '❌ 异常'}")
-    print(f"详细信息: {message}")
-    exit(0 if is_healthy else 1)
-```
-
-## 🔧 调试最佳实践
-
-### 1. 调试模式
-
-```python
-# 启用调试模式
-import os
-os.environ['ENCRYPT_DEBUG'] = '1'
-
-import encrypt
-import logging
-
-# 设置详细日志
-logging.basicConfig(level=logging.DEBUG)
-
-system = encrypt.bootstrap()
-```
-
-### 2. 问题诊断
-
-```python
-def diagnose_system():
-    """系统诊断"""
-    print("🔍 系统诊断")
-    
-    # 检查环境
-    print(f"Python 版本: {sys.version}")
-    print(f"工作目录: {os.getcwd()}")
-    
-    # 检查依赖
-    try:
-        import onnxruntime
-        print(f"✅ onnxruntime: {onnxruntime.__version__}")
-    except ImportError:
-        print("❌ onnxruntime 未安装")
-    
-    try:
-        from Crypto.Cipher import AES
-        print("✅ PyCrypto 可用")
-    except ImportError:
-        print("❌ PyCrypto 未安装")
-    
-    # 检查加密系统
-    system = encrypt.get_system()
-    if system:
-        status = system.get_status()
-        print(f"✅ 加密系统状态: {status}")
-    else:
-        print("❌ 加密系统未初始化")
-```
-
-### 3. 性能分析
-
-```python
-import cProfile
-import pstats
-
-def profile_encryption():
-    """性能分析"""
-    
-    def test_function():
-        system = encrypt.bootstrap()
-        # 执行一些操作
-        for i in range(10):
-            try:
-                import src.main
-            except ImportError:
-                pass
-    
-    # 运行性能分析
-    cProfile.run('test_function()', 'profile_stats')
-    
-    # 显示结果
-    stats = pstats.Stats('profile_stats')
-    stats.sort_stats('cumulative')
-    stats.print_stats(10)
-```
-
-## 📋 维护最佳实践
-
-### 1. 版本管理
-
-```python
-# 版本兼容性检查
-def check_compatibility():
-    import encrypt
-    
-    required_version = "1.0.0"
-    current_version = encrypt.__version__
-    
-    if current_version != required_version:
-        print(f"⚠️ 版本不匹配: 需要 {required_version}, 当前 {current_version}")
-```
-
-### 2. 配置管理
+### 2. Kubernetes 部署
 
 ```yaml
-# config.yaml
-encryption:
-  algorithm: "AES-CFB"
-  key_length: 16
-  partial_encryption: true
-  
-discovery:
-  auto_scan: true
-  exclude_patterns:
-    - "test*"
-    - "*.tmp"
-  
-performance:
-  cache_size: 100MB
-  temp_cleanup: true
+# ✅ Kubernetes 部署配置
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deepenc-app
+  labels:
+    app: deepenc-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: deepenc-app
+  template:
+    metadata:
+      labels:
+        app: deepenc-app
+    spec:
+      containers:
+      - name: deepenc-app
+        image: your-registry/deepenc-app:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: deepenc-secret
+              key: encryption-key
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: deepenc-secret
+type: Opaque
+data:
+  encryption-key: <base64-encoded-key>
 ```
 
-### 3. 监控和告警
+### 3. 监控和日志
 
 ```python
-# 监控关键指标
-def setup_monitoring():
-    import time
-    import threading
-    
-    def monitor_loop():
-        while True:
-            system = encrypt.get_system()
-            if system:
-                status = system.get_status()
-                
-                # 检查异常状态
-                if not status['initialized']:
-                    send_alert("加密系统未初始化")
-                
-                # 检查缓存使用
-                cache_info = status.get('module_cache_info', {})
-                if cache_info.get('cached_modules', 0) > 100:
-                    send_alert("模块缓存过多")
-            
-            time.sleep(60)  # 每分钟检查一次
-    
-    # 启动监控线程
-    monitor_thread = threading.Thread(target=monitor_loop, daemon=True)
-    monitor_thread.start()
-
-def send_alert(message):
-    """发送告警"""
-    print(f"🚨 告警: {message}")
-    # 这里可以集成实际的告警系统
-```
-
-## 🔄 CI/CD 集成
-
-### 1. 构建脚本
-
-```bash
-#!/bin/bash
-# build.sh
-
-set -e
-
-echo "🔨 开始构建加密项目..."
-
-# 检查环境
-python --version
-python -c "import encrypt; print(f'框架版本: {encrypt.__version__}')"
-
-# 设置构建环境
-export AUTH_MODE="PROD"
-export ENCRYPTION_KEY="${CI_ENCRYPTION_KEY}"
-
-# 构建项目
-python -m encrypt build --project . --verbose
-
-# 验证构建结果
-python -m encrypt verify
-
-echo "✅ 构建完成"
-```
-
-### 2. 测试脚本
-
-```bash
-#!/bin/bash
-# test.sh
-
-set -e
-
-echo "🧪 开始测试..."
-
-# 单元测试
-python -m pytest tests/ -v
-
-# 集成测试
-cd build
-python run.py --test-mode
-
-# 性能测试
-python -m encrypt profile
-
-echo "✅ 测试完成"
-```
-
-### 3. 部署脚本
-
-```bash
-#!/bin/bash
-# deploy.sh
-
-set -e
-
-echo "🚀 开始部署..."
-
-# 检查构建结果
-if [ ! -f "build/run.py" ]; then
-    echo "❌ 构建文件不存在"
-    exit 1
-fi
-
-# 部署到目标环境
-rsync -av build/ production_server:/app/
-
-# 重启服务
-ssh production_server "systemctl restart your-app"
-
-echo "✅ 部署完成"
-```
-
-## 🛡️ 安全最佳实践
-
-### 1. 密钥安全
-
-```bash
-# ✅ 使用安全的密钥存储
-# 不要在代码中硬编码密钥
-# 不要在日志中输出密钥
-# 定期轮换密钥
-
-# 使用密钥管理服务
-export ENCRYPTION_KEY=$(vault kv get -field=key secret/app/encryption)
-```
-
-### 2. 访问控制
-
-```python
-# 限制文件访问权限
-def secure_file_permissions():
-    import stat
-    
-    # 加密文件只有所有者可读
-    for encrypted_file in encrypted_files:
-        os.chmod(encrypted_file, stat.S_IRUSR)
-    
-    # 临时目录限制访问
-    temp_dir = '/tmp/encrypt_temp'
-    os.makedirs(temp_dir, mode=0o700, exist_ok=True)
-```
-
-### 3. 审计日志
-
-```python
-# 记录关键操作
+# ✅ 监控和日志配置
 import logging
+import json
+from datetime import datetime
+from deepenc import bootstrap
 
-audit_logger = logging.getLogger('encrypt.audit')
+# 配置结构化日志
+class StructuredFormatter(logging.Formatter):
+    def format(self, record):
+        log_entry = {
+            'timestamp': datetime.utcnow().isoformat(),
+            'level': record.levelname,
+            'logger': record.name,
+            'message': record.getMessage(),
+            'module': record.module,
+            'function': record.funcName,
+            'line': record.lineno
+        }
+        
+        # 添加异常信息
+        if record.exc_info:
+            log_entry['exception'] = self.formatException(record.exc_info)
+        
+        return json.dumps(log_entry)
 
-def log_operation(operation, details):
-    audit_logger.info(f"操作: {operation}, 详情: {details}")
-
-# 使用示例
-log_operation("模块解密", {"module": "src.main", "user": "admin"})
-log_operation("模型加载", {"model": "eros.onnx", "session_id": "12345"})
-```
-
-## 📊 监控最佳实践
-
-### 1. 关键指标
-
-```python
-# 定义关键性能指标 (KPI)
-KPI_METRICS = {
-    'startup_time': 5.0,        # 启动时间 < 5秒
-    'decrypt_time': 0.1,        # 解密时间 < 100ms
-    'memory_usage': 200,        # 内存使用 < 200MB
-    'cache_hit_rate': 0.9,      # 缓存命中率 > 90%
-}
-
-def check_kpis():
-    system = encrypt.get_system()
-    stats = system.get_performance_stats()
+# 配置日志
+def setup_logging():
+    """配置日志系统"""
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
     
-    for metric, threshold in KPI_METRICS.items():
-        current_value = stats.get(metric, 0)
-        if current_value > threshold:
-            print(f"⚠️ KPI 告警: {metric} = {current_value} > {threshold}")
-```
-
-### 2. 健康检查
-
-```python
-def comprehensive_health_check():
-    """全面健康检查"""
-    checks = []
+    # 控制台处理器
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(StructuredFormatter())
+    logger.addHandler(console_handler)
     
-    # 检查系统初始化
-    system = encrypt.get_system()
-    checks.append(("系统初始化", system is not None))
-    
-    # 检查授权状态
-    if system:
-        status = system.get_status()
-        checks.append(("授权有效", status.get('authorization_valid', False)))
-        checks.append(("模块加载器", status.get('module_loader_installed', False)))
-        checks.append(("ONNX加载器", status.get('onnx_loader_installed', False)))
-    
-    # 检查关键文件
-    checks.append(("配置文件", os.path.exists('config/encryption_config.json')))
-    checks.append(("启动脚本", os.path.exists('run.py')))
-    
-    # 输出结果
-    all_passed = True
-    for check_name, passed in checks:
-        status_icon = "✅" if passed else "❌"
-        print(f"{status_icon} {check_name}")
-        if not passed:
-            all_passed = False
-    
-    return all_passed
-```
+    # 文件处理器
+    file_handler = logging.FileHandler('deepenc.log')
+    file_handler.setFormatter(StructuredFormatter())
+    logger.addHandler(file_handler)
 
-## 🔄 故障恢复
-
-### 1. 自动恢复
-
-```python
-def auto_recovery():
-    """自动故障恢复"""
-    max_retries = 3
+# 启动监控
+def start_monitoring():
+    """启动监控"""
+    setup_logging()
     
-    for attempt in range(max_retries):
-        try:
-            system = encrypt.bootstrap()
-            return system
-        except Exception as e:
-            print(f"⚠️ 启动失败 (尝试 {attempt + 1}/{max_retries}): {e}")
-            
-            if attempt < max_retries - 1:
-                # 清理和重试
-                encrypt.shutdown()
-                time.sleep(1)
-            else:
-                raise
-```
-
-### 2. 降级策略
-
-```python
-def fallback_strategy():
-    """降级策略"""
-    try:
-        # 尝试完整初始化
-        system = encrypt.bootstrap()
-    except AuthenticationError:
-        print("⚠️ 授权失败，使用只读模式")
-        system = encrypt.bootstrap_readonly()
-    except Exception as e:
-        print(f"⚠️ 初始化失败，使用安全模式: {e}")
-        system = encrypt.bootstrap_safe_mode()
+    # 启动系统
+    system = bootstrap()
+    
+    # 记录启动信息
+    logging.info("DeepEnc 系统已启动", extra={
+        'system_status': 'running',
+        'version': '1.0.0'
+    })
     
     return system
+
+if __name__ == '__main__':
+    system = start_monitoring()
+    # 运行应用
 ```
+
+## 🔮 未来规划建议
+
+### 1. 短期优化
+
+- **性能优化**: 进一步提升解密性能，目标 < 50ms
+- **缓存优化**: 实现智能缓存策略，提高缓存命中率
+- **错误处理**: 提供更友好的错误信息和恢复建议
+
+### 2. 中期扩展
+
+- **分布式支持**: 支持 Redis 等分布式缓存
+- **云原生**: 支持 Kubernetes、Docker Swarm 等平台
+- **配置管理**: 支持配置热更新和版本管理
+
+### 3. 长期愿景
+
+- **AI 增强**: 智能配置推荐和性能优化
+- **多语言支持**: 支持 Java、Go 等其他语言
+- **生态系统**: 构建完整的加密分发生态系统

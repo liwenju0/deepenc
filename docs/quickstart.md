@@ -34,14 +34,43 @@ python main.py
 
 ### 3. 开发者无感知使用
 
+#### 方式1: 自动初始化（推荐）
+
 ```python
 # 在您的 Python 代码中，完全无需修改
+import deepenc
+
+# 自动初始化 - 系统会自动查找配置文件
+deepenc.auto_initialize()
+
+# 或者快速启动
+deepenc.quick_start()
+
+# 现在可以正常导入，系统会自动处理加密/解密
 import onnxruntime as ort
 from src import grpc_main, nsfw_image_censor
 
 # 系统会自动处理加密/解密
 session = ort.InferenceSession('model/eros/eros.onnx')  # 自动解密
 grpc_main.start_server()                                # 自动解密导入
+```
+
+#### 方式2: 手动配置
+
+```python
+import deepenc
+
+# 手动配置模块映射
+module_config = {
+    'src.main': 'encrypted/python/src/main.py.encrypted',
+    'src.utils': 'encrypted/python/src/utils.py.encrypted'
+}
+
+# 初始化系统
+system = deepenc.initialize(module_config)
+
+# 现在可以正常导入加密模块
+from src import main, utils
 ```
 
 ### 4. 新功能：自定义入口文件
@@ -108,31 +137,31 @@ export AUTH_MODE="PROD"
 
 ```bash
 # 扫描当前项目
-python -m encrypt scan
+python -m deepenc scan
 
 # 扫描指定项目
-python -m encrypt scan --project /path/to/project
+python -m deepenc scan --project /path/to/project
 
 # JSON 格式输出
-python -m encrypt scan --format json
+python -m deepenc scan --format json
 ```
 
 ### 查看系统状态
 
 ```bash
-python -m encrypt status
+python -m deepenc status
 ```
 
 ### 清理构建目录
 
 ```bash
-python -m encrypt clean
+python -m deepenc clean
 ```
 
 ### 验证构建结果
 
 ```bash
-python -m encrypt verify
+python -m deepenc verify
 ```
 
 ## 🎯 高级用法
@@ -140,8 +169,8 @@ python -m encrypt verify
 ### 自定义过滤规则
 
 ```python
-from encrypt.builders import ProjectBuilder
-from encrypt.discovery import FileFilter
+from deepenc.builders import ProjectBuilder
+from deepenc.discovery import FileFilter
 
 # 创建自定义过滤器
 custom_rules = {
@@ -159,7 +188,7 @@ build_report = builder.build_project()
 ### 手动初始化系统
 
 ```python
-import encrypt
+import deepenc
 
 # 手动配置模块映射
 module_config = {
@@ -168,7 +197,7 @@ module_config = {
 }
 
 # 初始化系统
-system = encrypt.initialize(module_config)
+system = deepenc.initialize(module_config)
 
 # 现在可以正常导入加密模块
 from src import main, utils
@@ -177,10 +206,10 @@ from src import main, utils
 ### 获取系统信息
 
 ```python
-import encrypt
+import deepenc
 
 # 获取系统实例
-system = encrypt.get_system()
+system = deepenc.get_system()
 
 if system:
     # 获取状态信息
@@ -189,6 +218,25 @@ if system:
     
     # 清理缓存
     system.clear_caches()
+```
+
+### 系统生命周期管理
+
+```python
+import deepenc
+
+# 启动系统
+system = deepenc.bootstrap()
+
+# 检查系统状态
+if deepenc.is_initialized():
+    print("系统已启动")
+
+# 关闭系统
+deepenc.shutdown()
+
+# 重新启动
+system = deepenc.initialize()
 ```
 
 ## 🛠️ 故障排除
@@ -232,10 +280,10 @@ if system:
 
 ```bash
 # 启用详细输出
-python -m encrypt build --verbose
+python -m deepenc build --verbose
 
 # 或者在代码中
-import encrypt
+import deepenc
 import logging
 logging.basicConfig(level=logging.DEBUG)
 ```
@@ -243,18 +291,18 @@ logging.basicConfig(level=logging.DEBUG)
 ### 重置系统
 
 ```python
-import encrypt
+import deepenc
 
 # 关闭系统
-encrypt.shutdown()
+deepenc.shutdown()
 
 # 重新初始化
-system = encrypt.initialize()
+system = deepenc.initialize()
 ```
 
 ## 📚 更多文档
 
 - [API 文档](api.md)
 - [架构设计](architecture.md)
-- [配置参考](configuration.md)
 - [最佳实践](best_practices.md)
+- [配置参考](configuration.md)

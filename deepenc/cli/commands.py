@@ -51,10 +51,10 @@ class EncryptCLI:
                 print(f"🚪 项目入口: {entry_point}")
             
             # 创建项目构建器
-            builder = ProjectBuilder(project_root, build_dir, entry_point)
+            builder = ProjectBuilder(project_root, build_dir)
             
             # 构建项目
-            build_report = builder.build_project(auto_discover=True, clean=clean)
+            build_report = builder.build_project(clean=clean)
             
             if verbose:
                 self._print_verbose_report(build_report)

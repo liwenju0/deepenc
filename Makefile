@@ -87,13 +87,32 @@ package: build ## 打包分发
 	cd $(BUILD_DIR) && tar -czf ../$(DIST_DIR)/$(PROJECT_NAME)-$(VERSION).tar.gz .
 	@echo "✅ 打包完成: $(DIST_DIR)/$(PROJECT_NAME)-$(VERSION).tar.gz"
 
-dev-setup: install ## 开发环境设置
+# 设置开发环境
+dev-setup:
 	@echo "🔧 设置开发环境..."
-	$(PIP) install black flake8 pytest
-	@echo "export ENCRYPTION_KEY='dev-key-16chars'" >> ~/.bashrc
-	@echo "export AUTH_MODE='DEV'" >> ~/.bashrc
+	@echo "📝 创建许可证文件..."
+	@mkdir -p /data/appdatas/inference
+	@echo "dev-key-16chars" > /data/appdatas/inference/license.dat
+	@echo "export AUTH_MODE=DEV" >> ~/.bashrc
 	@echo "✅ 开发环境设置完成"
-	@echo "请运行: source ~/.bashrc"
+	@echo "📋 许可证文件: /data/appdatas/inference/license.dat"
+	@echo "🔑 开发模式: AUTH_MODE=DEV"
+
+# 设置生产环境
+prod-setup:
+	@echo "🔐 设置生产环境..."
+	@echo "⚠️  请确保硬件授权库可用"
+	@echo "export AUTH_MODE=PROD" >> ~/.bashrc
+	@echo "✅ 生产环境设置完成"
+	@echo "🔑 生产模式: AUTH_MODE=PROD"
+
+# 测试构建
+test-build:
+	@echo "🧪 测试项目构建..."
+	@echo "📝 检查许可证文件..."
+	@test -f "/data/appdatas/inference/license.dat" || { echo "❌ 请先运行 'make dev-setup' 创建许可证文件"; exit 1; }
+	@echo "✅ 许可证文件检查通过"
+	@python -m deepenc build --verbose
 
 benchmark: ## 性能基准测试
 	@echo "⚡ 运行性能基准测试..."

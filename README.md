@@ -53,8 +53,13 @@ deepenc/
 # 安装依赖
 pip install pycrypto onnxruntime
 
-# 设置加密密钥（开发环境）
-export ENCRYPTION_KEY="1234567890123456"  # 16字符密钥
+# 设置开发环境
+make dev-setup
+
+# 或者手动设置
+mkdir -p /data/appdatas/inference
+echo "your-16-char-key" > /data/appdatas/inference/license.dat
+export AUTH_MODE="DEV"
 ```
 
 ### 2. 构建加密项目
@@ -140,7 +145,7 @@ from src import main, utils
 
 ### 🔐 企业级安全
 
-- **多级授权**: 硬件授权 → 许可证文件 → 环境变量
+- **多级授权**: 硬件授权 → 许可证文件
 - **AES 加密**: 使用 AES-CFB 模式，平衡安全性和性能
 - **部分加密**: 大文件只加密前 10MB，大幅提升性能
 - **安全降级**: 授权失败时优雅降级，不影响系统运行
@@ -290,7 +295,7 @@ COPY build/ /app/
 WORKDIR /app
 
 # 设置环境变量
-ENV ENCRYPTION_KEY=your-production-key
+ENV AUTH_MODE=PROD
 
 # 启动应用
 CMD ["python", "main.py"]
@@ -311,11 +316,10 @@ spec:
       - name: deepenc-app
         image: your-registry/deepenc-app:latest
         env:
-        - name: ENCRYPTION_KEY
-          valueFrom:
-            secretKeyRef:
-              name: deepenc-secret
-              key: encryption-key
+        - name: AUTH_MODE
+          value: "PROD"
+        - name: LICENSE_PATH
+          value: "/data/appdatas/inference/license.dat"
 ```
 
 ## 🔧 开发环境
@@ -329,6 +333,9 @@ cd deepenc
 
 # 安装开发依赖
 pip install -e ".[dev]"
+
+# 设置开发环境
+make dev-setup
 
 # 运行测试
 python -m pytest tests/

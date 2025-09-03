@@ -4,8 +4,8 @@
 
 DeepEnc 框架支持多种配置方式，按优先级排序：
 
-1. **环境变量** - 最高优先级，适合开发环境
-2. **配置文件** - 中等优先级，适合生产环境
+1. **许可证文件** - 最高优先级，适合开发和生产环境
+2. **硬件授权** - 中等优先级，适合生产环境
 3. **代码配置** - 最低优先级，适合自定义场景
 4. **默认配置** - 兜底配置，确保系统正常运行
 
@@ -15,8 +15,6 @@ DeepEnc 框架支持多种配置方式，按优先级排序：
 
 | 变量名 | 描述 | 默认值 | 示例 |
 |--------|------|--------|------|
-| `ENCRYPTION_KEY` | 加密密钥 | 无 | `ENCRYPTION_KEY="1234567890123456"` |
-| `AUTH_CODE` | 授权码 | 无 | `AUTH_CODE="your-auth-code"` |
 | `AUTH_MODE` | 授权模式 | `DEV` | `AUTH_MODE="PROD"` |
 | `DEEPENC_DEBUG` | 调试模式 | `False` | `DEEPENC_DEBUG="1"` |
 
@@ -26,7 +24,7 @@ DeepEnc 框架支持多种配置方式，按优先级排序：
 |--------|------|--------|------|
 | `DEEPENC_CONFIG_DIR` | 配置目录 | `./config` | `DEEPENC_CONFIG_DIR="/etc/deepenc"` |
 | `DEEPENC_BUILD_DIR` | 构建目录 | `./build` | `DEEPENC_BUILD_DIR="/opt/build"` |
-| `DEEPENC_LICENSE_PATH` | 许可证文件路径 | 无 | `DEEPENC_LICENSE_PATH="/data/license.dat"` |
+| `DEEPENC_LICENSE_PATH` | 许可证文件路径 | 无 | `DEEPENC_LICENSE_PATH="/data/appdatas/inference/license.dat"` |
 
 ### 性能配置
 
@@ -43,6 +41,42 @@ DeepEnc 框架支持多种配置方式，按优先级排序：
 | `DEEPENC_KEY_ROTATION` | 密钥轮换间隔 (小时) | `24` | `DEEPENC_KEY_ROTATION="12"` |
 | `DEEPENC_AUDIT_LOG` | 审计日志路径 | 无 | `DEEPENC_AUDIT_LOG="/var/log/deepenc/audit.log"` |
 | `DEEPENC_SECURE_MODE` | 安全模式 | `False` | `DEEPENC_SECURE_MODE="1"` |
+
+## 📄 许可证文件配置
+
+### 许可证文件位置
+
+框架按以下顺序查找许可证文件：
+
+1. **设备特定许可证**: `/data/appdatas/inference/{device_id}.license`
+2. **默认许可证**: `/data/appdatas/inference/license.dat`
+3. **自定义路径**: 通过环境变量 `DEEPENC_LICENSE_PATH` 指定
+
+### 许可证文件格式
+
+#### 开发模式 (AUTH_MODE=DEV)
+
+```bash
+# 许可证文件内容直接为加密密钥
+echo "1234567890123456" > /data/appdatas/inference/license.dat
+export AUTH_MODE="DEV"
+```
+
+#### 生产模式 (AUTH_MODE=PROD)
+
+```bash
+# 许可证文件内容为加密数据，需要通过硬件授权解密
+echo "encrypted-license-content" > /data/appdatas/inference/license.dat
+export AUTH_MODE="PROD"
+```
+
+### 许可证文件权限
+
+```bash
+# 设置安全的文件权限
+chmod 600 /data/appdatas/inference/license.dat
+chown root:root /data/appdatas/inference/license.dat
+```
 
 ## 📄 配置文件配置
 
@@ -65,7 +99,7 @@ DeepEnc 支持多种配置文件格式：
         "mode": "PROD",
         "key_source": "hardware",
         "license_path": "/data/appdatas/inference/license.dat",
-        "fallback_to_env": true
+        "hardware_auth_timeout": 10
     },
     "discovery": {
         "auto_scan": true,
@@ -125,7 +159,7 @@ auth:
   mode: "PROD"
   key_source: "hardware"
   license_path: "/data/appdatas/inference/license.dat"
-  fallback_to_env: true
+  hardware_auth_timeout: 10
 
 discovery:
   auto_scan: true
@@ -181,7 +215,7 @@ max_encrypt_size = 10485760
 mode = "PROD"
 key_source = "hardware"
 license_path = "/data/appdatas/inference/license.dat"
-fallback_to_env = true
+hardware_auth_timeout = 10
 
 [discovery]
 auto_scan = true
@@ -316,11 +350,9 @@ except ValueError as e:
 | 选项 | 类型 | 默认值 | 描述 |
 |------|------|--------|------|
 | `mode` | string | `"DEV"` | 授权模式，支持 DEV, TEST, PROD |
-| `key_source` | string | `"environment"` | 密钥来源，支持 environment, file, hardware |
-| `license_path` | string | 无 | 许可证文件路径 |
-| `fallback_to_env` | bool | `true` | 是否降级到环境变量 |
-| `hardware_lib_path` | string | 无 | 硬件授权库路径 |
-| `auth_timeout` | int | `30` | 授权超时时间 (秒) |
+| `key_source` | string | `"license_file"` | 密钥来源，支持 license_file, hardware |
+| `license_path` | string | `/data/appdatas/inference/license.dat` | 许可证文件路径 |
+| `hardware_auth_timeout` | int | `10` | 硬件授权超时时间 (秒) |
 
 ### 发现配置 (discovery)
 
@@ -541,7 +573,7 @@ print("配置诊断报告:")
 print(f"配置文件数量: {report['config_files_found']}")
 print(f"配置加载状态: {report['load_status']}")
 print(f"配置验证结果: {report['validation_result']}")
-print(f"环境变量状态: {report['environment_status']}")
+print(f"许可证文件状态: {report['license_status']}")
 
 if report['issues']:
     print("\n发现的问题:")
@@ -576,15 +608,15 @@ for change in diff.changes:
 
 ```bash
 # 开发环境
-export DEEPENC_ENV="development"
+export AUTH_MODE="DEV"
 export DEEPENC_CONFIG_DIR="./config/dev"
 
 # 测试环境
-export DEEPENC_ENV="testing"
+export AUTH_MODE="TEST"
 export DEEPENC_CONFIG_DIR="./config/test"
 
 # 生产环境
-export DEEPENC_ENV="production"
+export AUTH_MODE="PROD"
 export DEEPENC_CONFIG_DIR="/etc/deepenc/prod"
 ```
 

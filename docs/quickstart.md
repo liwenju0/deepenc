@@ -97,31 +97,23 @@ pip install pycrypto onnxruntime
 
 ### 密钥配置
 
-框架支持多种密钥来源（按优先级排序）：
+框架支持两种密钥来源（按优先级排序）：
 
 1. **硬件授权许可证**（生产环境推荐）
 2. **许可证文件**
-3. **环境变量**
 
-#### 方式1: 环境变量（开发推荐）
-
-```bash
-export ENCRYPTION_KEY="your-16-char-key1"
-# 或者
-export AUTH_CODE="your-encryption-key"
-```
-
-#### 方式2: 许可证文件
+#### 方式1: 许可证文件（开发推荐）
 
 ```bash
 # 创建许可证文件
-echo "your-license-content" > license.dat
+mkdir -p /data/appdatas/inference
+echo "your-16-char-key" > /data/appdatas/inference/license.dat
 
-# 或者放在系统目录
-echo "your-license-content" > /data/appdatas/inference/license.dat
+# 设置开发模式
+export AUTH_MODE="DEV"
 ```
 
-#### 方式3: 硬件授权（生产环境）
+#### 方式2: 硬件授权（生产环境）
 
 ```bash
 # 设置授权模式
@@ -250,9 +242,9 @@ system = deepenc.initialize()
 ```
 
 **解决方案:**
-- 检查环境变量 `ENCRYPTION_KEY` 是否设置
-- 确保密钥长度为 16、24 或 32 字符
-- 检查许可证文件是否存在且可读
+- 检查许可证文件 `/data/appdatas/inference/license.dat` 是否存在
+- 确保许可证文件内容为有效的16、24或32字符密钥
+- 检查许可证文件权限是否正确
 
 #### 2. 模块导入失败
 

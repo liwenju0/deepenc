@@ -90,7 +90,7 @@ class HardwareAuth:
 class AuthManager:
     """授权管理器
     
-    统一管理密钥获取，支持硬件授权和环境变量。
+    统一管理密钥获取，支持硬件授权和许可证文件。
     遵循 Linux 的优先级和降级机制。
     """
     
@@ -126,14 +126,12 @@ class AuthManager:
     def _get_encryption_key(self):
         """获取加密密钥
         
-        仅从许可证文件获取密钥。
+        从许可证文件获取密钥，支持开发和生产两种模式。
         
         Returns:
             str: 加密密钥
         """
-      
-        
-        # 仅从许可证文件获取
+        # 从许可证文件获取
         key = self._get_key_from_license_file()
         if key:
             return key

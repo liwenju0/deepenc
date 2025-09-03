@@ -281,17 +281,16 @@ with open(config_path, 'w') as f:
 import os
 from pathlib import Path
 
-# 环境变量方式（开发环境）
-os.environ['ENCRYPTION_KEY'] = 'your-16-char-key'
+# 开发环境：创建许可证文件
+license_dir = Path('/data/appdatas/inference')
+license_dir.mkdir(parents=True, exist_ok=True)
+license_file = license_dir / 'license.dat'
+license_file.write_text('your-16-char-key')
 
-# 许可证文件方式（生产环境）
-license_path = Path('/data/appdatas/inference/license.dat')
-if license_path.exists():
-    with open(license_path, 'r') as f:
-        license_content = f.read().strip()
-    os.environ['AUTH_CODE'] = license_content
+# 设置开发模式
+os.environ['AUTH_MODE'] = 'DEV'
 
-# 硬件授权方式（最高安全）
+# 生产环境：使用硬件授权
 os.environ['AUTH_MODE'] = 'PROD'
 ```
 
@@ -326,7 +325,6 @@ class SecureFormatter(logging.Formatter):
     def _filter_sensitive(self, msg):
         # 过滤密钥、路径等敏感信息
         sensitive_patterns = [
-            r'ENCRYPTION_KEY=\w+',
             r'/data/appdatas/inference/',
             r'license\.dat'
         ]
@@ -594,7 +592,7 @@ class TestPerformance(unittest.TestCase):
 
 ## 🚀 部署最佳实践
 
-### 1. 容器化部署
+### 1. Docker 部署
 
 ```dockerfile
 # ✅ Dockerfile 最佳实践
@@ -618,8 +616,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY build/ .
 
 # 设置环境变量
-ENV PYTHONPATH=/app
-ENV ENCRYPTION_KEY=your-production-key
+ENV AUTH_MODE=PROD
 
 # 创建非 root 用户
 RUN useradd --create-home --shell /bin/bash app \
@@ -660,11 +657,10 @@ spec:
         ports:
         - containerPort: 8080
         env:
-        - name: ENCRYPTION_KEY
-          valueFrom:
-            secretKeyRef:
-              name: deepenc-secret
-              key: encryption-key
+        - name: AUTH_MODE
+          value: "PROD"
+        - name: LICENSE_PATH
+          value: "/data/appdatas/inference/license.dat"
         resources:
           requests:
             memory: "512Mi"
@@ -691,7 +687,7 @@ metadata:
   name: deepenc-secret
 type: Opaque
 data:
-  encryption-key: <base64-encoded-key>
+  license-content: <base64-encoded-license>
 ```
 
 ### 3. 监控和日志

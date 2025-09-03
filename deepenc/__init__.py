@@ -14,7 +14,7 @@ Python 项目加密分发框架
 
 Usage:
     import deepenc
-    deepenc.bootstrap()  # 启动加密系统
+    deepenc.auto_initialize()  # 启动加密系统
     
     # 现在可以正常导入，系统会自动处理加密/解密
     from your_module import your_function
@@ -29,7 +29,7 @@ __author__ = "AI Assistant"
 __license__ = "MIT"
 
 # 导出主要接口 - 使用相对import
-from .bootstrap import bootstrap, initialize
+from .bootstrap import bootstrap, initialize, auto_initialize, quick_start, get_system, shutdown, is_initialized
 from .core import EncryptionError, AuthenticationError
 from .builders.project_builder import ProjectBuilder
 
@@ -39,7 +39,12 @@ logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 __all__ = [
     'bootstrap',
-    'initialize', 
+    'initialize',
+    'auto_initialize',
+    'quick_start', 
+    'get_system',
+    'shutdown',
+    'is_initialized',
     'ProjectBuilder',
     'EncryptionError',
     'AuthenticationError',

@@ -121,9 +121,6 @@ export AUTH_MODE="DEV"
 # 创建许可证文件
 mkdir -p /data/appdatas/inference
 echo "your-16-char-key" > /data/appdatas/inference/license.dat
-
-# 设置调试模式
-export DEEPENC_DEBUG="1"
 ```
 
 #### 生产环境
@@ -134,9 +131,6 @@ export AUTH_MODE="PROD"
 
 # 使用硬件授权
 export HARDWARE_AUTH="1"
-
-# 设置安全模式
-export DEEPENC_SECURE_MODE="1"
 ```
 
 ### 2. Docker 部署
@@ -167,10 +161,6 @@ RUN useradd --create-home --shell /bin/bash app \
     && chown -R app:app /app
 USER app
 
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import deepenc; print('OK')" || exit 1
-
 CMD ["python", "main.py"]
 ```
 
@@ -195,8 +185,6 @@ spec:
         env:
         - name: AUTH_MODE
           value: "PROD"
-        - name: LICENSE_PATH
-          value: "/data/appdatas/inference/license.dat"
         resources:
           requests:
             memory: "512Mi"
@@ -232,7 +220,7 @@ data:
 import deepenc
 
 # 设置缓存大小
-os.environ['DEEPENC_CACHE_SIZE'] = '200'  # 200MB
+os.environ['ENCRYPT_CACHE_SIZE'] = '200'  # 200MB
 
 # 初始化系统
 system = deepenc.auto_initialize()
@@ -245,7 +233,7 @@ system.clear_caches()
 
 ```python
 # 设置工作线程数
-os.environ['DEEPENC_MAX_WORKERS'] = '8'
+os.environ['ENCRYPT_MAX_WORKERS'] = '8'
 
 # 使用线程池处理多个文件
 import concurrent.futures
@@ -282,22 +270,9 @@ def monitor_memory():
 # 设置安全的文件权限
 chmod 600 /data/appdatas/inference/license.dat
 chown root:root /data/appdatas/inference/license.dat
-
-# 定期轮换密钥
-export DEEPENC_KEY_ROTATION="12"  # 12小时轮换一次
 ```
 
-### 2. 审计日志
-
-```bash
-# 启用审计日志
-export DEEPENC_AUDIT_LOG="/var/log/deepenc/audit.log"
-
-# 设置日志轮转
-logrotate /etc/logrotate.d/deepenc
-```
-
-### 3. 网络安全
+### 2. 网络安全
 
 ```python
 # 限制网络访问
@@ -389,14 +364,11 @@ def slow_function():
 # 1. 检查系统状态
 python -m deepenc status
 
-# 2. 检查日志
-tail -f /var/log/deepenc/deepenc.log
-
-# 3. 检查许可证
+# 2. 检查许可证
 ls -la /data/appdatas/inference/
 cat /data/appdatas/inference/license.dat
 
-# 4. 检查构建结果
+# 3. 检查构建结果
 ls -la build/encrypted/
 ```
 
@@ -406,9 +378,6 @@ ls -la build/encrypted/
 # 启用详细调试
 import logging
 logging.basicConfig(level=logging.DEBUG)
-
-# 启用框架调试
-os.environ['DEEPENC_DEBUG'] = '1'
 
 # 获取详细状态
 system = deepenc.get_system()
@@ -545,53 +514,13 @@ python -m deepenc verify
 echo "🎉 所有测试通过！"
 ```
 
-## 📈 性能基准测试
-
-### 1. 基准测试脚本
-
-```python
-# benchmarks/performance_test.py
-import time
-import statistics
-
-def benchmark_encryption():
-    """加密性能基准测试"""
-    times = []
-    
-    for i in range(10):
-        start_time = time.time()
-        
-        # 执行加密操作
-        system = deepenc.auto_initialize()
-        from src import main
-        main.run()
-        
-        end_time = time.time()
-        times.append(end_time - start_time)
-    
-    return {
-        'mean': statistics.mean(times),
-        'median': statistics.median(times),
-        'std': statistics.stdev(times),
-        'min': min(times),
-        'max': max(times)
-    }
-
-if __name__ == "__main__":
-    results = benchmark_encryption()
-    print(f"加密性能基准测试结果:")
-    print(f"平均时间: {results['mean']:.3f}s")
-    print(f"中位数: {results['median']:.3f}s")
-    print(f"标准差: {results['std']:.3f}s")
-```
-
 ## 📚 总结
 
 遵循这些最佳实践可以确保：
 
 1. **代码质量**: 清晰的模块结构和接口设计
 2. **性能优化**: 合理的缓存策略和并发处理
-3. **安全可靠**: 完善的密钥管理和审计机制
+3. **安全可靠**: 完善的密钥管理
 4. **易于维护**: 全面的测试覆盖和监控体系
 5. **生产就绪**: 容器化部署和自动化运维
 

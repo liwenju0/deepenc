@@ -4,7 +4,7 @@
 
 ### 框架入口
 
-#### `deepenc.bootstrap(module_config=None)`
+#### `deepenc.initialize(module_config=None)`
 
 启动加密系统的主要入口点。
 
@@ -24,19 +24,12 @@
 ```python
 import deepenc
 
-# 自动初始化
-system = deepenc.bootstrap()
-
 # 手动配置
 module_config = {
     'src.main': 'encrypted/python/src/main.py.encrypted'
 }
-system = deepenc.bootstrap(module_config)
+system = deepenc.initialize(module_config)
 ```
-
-#### `deepenc.initialize(module_config=None)`
-
-`bootstrap()` 的别名，提供更明确的语义。
 
 #### `deepenc.auto_initialize()`
 
@@ -346,7 +339,7 @@ import deepenc
 from deepenc.core import EncryptionError
 
 try:
-    system = deepenc.bootstrap()
+    system = deepenc.auto_initialize()
 except EncryptionError as e:
     print(f"加密系统启动失败: {e}")
     # 降级处理

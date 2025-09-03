@@ -87,11 +87,6 @@ DeepEnc 支持多种配置文件格式：
         "cache_size_mb": 200,
         "max_workers": 8,
         "temp_dir": "/var/tmp"
-    },
-    "security": {
-        "audit_log": "/var/log/deepenc/audit.log",
-        "key_rotation_hours": 12,
-        "secure_mode": true
     }
 }
 ```
@@ -115,11 +110,6 @@ performance:
   cache_size_mb: 200
   max_workers: 8
   temp_dir: "/var/tmp"
-
-security:
-  audit_log: "/var/log/deepenc/audit.log"
-  key_rotation_hours: 12
-  secure_mode: true
 ```
 
 ### 配置文件位置
@@ -238,27 +228,6 @@ security:
 - **PROD**: 生产模式，使用硬件授权
 - **HYBRID**: 混合模式，优先硬件授权，降级到许可证文件
 
-### 审计配置
-
-```json
-{
-    "security": {
-        "audit": {
-            "enabled": true,
-            "log_path": "/var/log/deepenc/audit.log",
-            "log_level": "INFO",
-            "max_file_size": 10485760,
-            "backup_count": 5
-        }
-    }
-}
-```
-
-**审计功能:**
-- **操作记录**: 记录所有加密/解密操作
-- **访问日志**: 记录模块访问和加载
-- **错误追踪**: 记录所有错误和异常
-
 ## 🔧 构建配置
 
 ### 项目构建配置
@@ -312,58 +281,6 @@ security:
                 "src/main.py",
                 "src/core.py"
             ]
-        }
-    }
-}
-```
-
-## 📊 监控配置
-
-### 系统监控配置
-
-```json
-{
-    "monitoring": {
-        "enabled": true,
-        "metrics": {
-            "cpu_usage": true,
-            "memory_usage": true,
-            "disk_usage": true,
-            "network_io": false
-        },
-        "health_check": {
-            "enabled": true,
-            "interval_seconds": 30,
-            "timeout_seconds": 10
-        }
-    }
-}
-```
-
-**监控指标:**
-- **系统指标**: CPU、内存、磁盘使用率
-- **应用指标**: 模块加载数、缓存命中率
-- **性能指标**: 响应时间、吞吐量
-
-### 日志配置
-
-```json
-{
-    "logging": {
-        "level": "INFO",
-        "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        "handlers": {
-            "console": {
-                "enabled": true,
-                "level": "INFO"
-            },
-            "file": {
-                "enabled": true,
-                "level": "DEBUG",
-                "path": "/var/log/deepenc/deepenc.log",
-                "max_size_mb": 100,
-                "backup_count": 5
-            }
         }
     }
 }

@@ -90,46 +90,6 @@ python -m deepenc clean
 python -m deepenc verify
 ```
 
-## 🎯 高级用法
-
-### 自定义过滤规则
-
-```python
-from deepenc.builders import ProjectBuilder
-from deepenc.discovery import FileFilter
-
-# 创建自定义过滤器
-custom_rules = {
-    'exclude_dirs': ['my_test_dir'],
-    'exclude_files': ['config.py'],
-    'include_files': ['important.py']  # 强制包含
-}
-
-# 使用自定义规则构建
-builder = ProjectBuilder()
-builder.scanner.file_filter = FileFilter(custom_rules)
-build_report = builder.build_project()
-```
-
-### 系统生命周期管理
-
-```python
-import deepenc
-
-# 启动系统
-system = deepenc.bootstrap()
-
-# 检查系统状态
-if deepenc.is_initialized():
-    print("系统已启动")
-
-# 关闭系统
-deepenc.shutdown()
-
-# 重新启动
-system = deepenc.initialize()
-```
-
 ## 🛠️ 故障排除
 
 ### 常见问题

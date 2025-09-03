@@ -17,31 +17,14 @@ DeepEnc 框架支持多种配置方式，按优先级排序：
 | 变量名 | 描述 | 默认值 | 示例 |
 |--------|------|--------|------|
 | `AUTH_MODE` | 授权模式 | `DEV` | `AUTH_MODE="PROD"` |
-| `DEEPENC_DEBUG` | 调试模式 | `False` | `DEEPENC_DEBUG="1"` |
 
-### 路径配置
-
-| 变量名 | 描述 | 默认值 | 示例 |
-|--------|------|--------|------|
-| `DEEPENC_CONFIG_DIR` | 配置目录 | `./config` | `DEEPENC_CONFIG_DIR="/etc/deepenc"` |
-| `DEEPENC_BUILD_DIR` | 构建目录 | `./build` | `DEEPENC_BUILD_DIR="/opt/build"` |
-| `DEEPENC_LICENSE_PATH` | 许可证文件路径 | 无 | `DEEPENC_LICENSE_PATH="/data/appdatas/inference/license.dat"` |
-
-### 性能配置
+### 加密配置
 
 | 变量名 | 描述 | 默认值 | 示例 |
 |--------|------|--------|------|
-| `DEEPENC_CACHE_SIZE` | 缓存大小 (MB) | `100` | `DEEPENC_CACHE_SIZE="200"` |
-| `DEEPENC_TEMP_DIR` | 临时目录 | `/tmp` | `DEEPENC_TEMP_DIR="/var/tmp"` |
-| `DEEPENC_MAX_WORKERS` | 最大工作线程数 | `4` | `DEEPENC_MAX_WORKERS="8"` |
-
-### 安全配置
-
-| 变量名 | 描述 | 默认值 | 示例 |
-|--------|------|--------|------|
-| `DEEPENC_KEY_ROTATION` | 密钥轮换间隔 (小时) | `24` | `DEEPENC_KEY_ROTATION="12"` |
-| `DEEPENC_AUDIT_LOG` | 审计日志路径 | 无 | `DEEPENC_AUDIT_LOG="/var/log/deepenc/audit.log"` |
-| `DEEPENC_SECURE_MODE` | 安全模式 | `False` | `DEEPENC_SECURE_MODE="1"` |
+| `ENCRYPT_CACHE_SIZE` | 缓存大小 (MB) | 无 | `ENCRYPT_CACHE_SIZE="200"` |
+| `ENCRYPT_LOG_LEVEL` | 日志级别 | 无 | `ENCRYPT_LOG_LEVEL="INFO"` |
+| `ENCRYPT_ENC_LEN` | 加密长度 | 无 | `ENCRYPT_ENC_LEN="256"` |
 
 ## 📄 许可证文件配置
 
@@ -51,7 +34,6 @@ DeepEnc 框架支持多种配置方式，按优先级排序：
 
 1. **设备特定许可证**: `/data/appdatas/inference/{device_id}.license`
 2. **默认许可证**: `/data/appdatas/inference/license.dat`
-3. **自定义路径**: 通过环境变量 `DEEPENC_LICENSE_PATH` 指定
 
 ### 许可证文件格式
 
@@ -144,10 +126,9 @@ security:
 
 框架按以下顺序查找配置文件：
 
-1. **环境变量指定**: `DEEPENC_CONFIG_DIR/config.json`
-2. **构建目录**: `build/config/encryption_config.json`
-3. **项目根目录**: `config/encryption_config.json`
-4. **默认位置**: `./config/encryption_config.json`
+1. **构建目录**: `build/config/encryption_config.json`
+2. **项目根目录**: `config/encryption_config.json`
+3. **默认位置**: `./config/encryption_config.json`
 
 ## 🔐 加密配置
 
@@ -452,16 +433,13 @@ else:
 ```dockerfile
 # 设置环境变量
 ENV AUTH_MODE=PROD
-ENV DEEPENC_DEBUG=0
-ENV DEEPENC_CACHE_SIZE=200
-ENV DEEPENC_MAX_WORKERS=8
+ENV ENCRYPT_CACHE_SIZE=200
 
 # 创建配置目录
 RUN mkdir -p /etc/deepenc
 
 # 复制配置文件
 COPY config/ /etc/deepenc/
-ENV DEEPENC_CONFIG_DIR=/etc/deepenc
 ```
 
 ### Kubernetes 配置
@@ -491,8 +469,8 @@ spec:
       containers:
       - name: deepenc-app
         env:
-        - name: DEEPENC_CONFIG_DIR
-          value: "/etc/deepenc"
+        - name: AUTH_MODE
+          value: "PROD"
         volumeMounts:
         - name: config-volume
           mountPath: /etc/deepenc
@@ -549,19 +527,12 @@ spec:
 ```bash
 # 开发环境
 export AUTH_MODE="DEV"
-export DEEPENC_DEBUG="1"
-export DEEPENC_CACHE_SIZE="50"
 
 # 测试环境
 export AUTH_MODE="DEV"
-export DEEPENC_DEBUG="0"
-export DEEPENC_CACHE_SIZE="100"
 
 # 生产环境
 export AUTH_MODE="PROD"
-export DEEPENC_DEBUG="0"
-export DEEPENC_CACHE_SIZE="200"
-export DEEPENC_SECURE_MODE="1"
 ```
 
 ### 2. 配置管理

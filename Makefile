@@ -46,6 +46,11 @@ install: ## 安装依赖
 	$(PIP) install pycrypto onnxruntime
 	@echo "✅ 依赖安装完成"
 
+install-dev: ## 安装开发依赖
+	@echo "📦 安装开发依赖..."
+	$(PIP) install pycrypto onnxruntime black flake8 autopep8 isort autoflake pytest pytest-cov mypy
+	@echo "✅ 开发依赖安装完成"
+
 check: ## 检查系统状态
 	@echo "🔍 检查系统状态..."
 	$(PYTHON) -m encrypt status
@@ -60,8 +65,29 @@ format: ## 格式化代码
 lint: ## 代码检查
 	@echo "🔍 代码检查..."
 	@command -v flake8 >/dev/null 2>&1 || { echo "请安装 flake8: pip install flake8"; exit 1; }
-	flake8 --max-line-length 88 --ignore E203,W503 .
+	flake8 --max-line-length 88 --ignore E203,W503,F403,F405,F541,E722,W293,E501,F841 .
 	@echo "✅ 代码检查完成"
+
+lint-fix: ## 自动修复代码风格问题
+	@echo "🔧 自动修复代码风格问题..."
+	@command -v autopep8 >/dev/null 2>&1 || { echo "请安装 autopep8: pip install autopep8"; exit 1; }
+	@command -v isort >/dev/null 2>&1 || { echo "请安装 isort: pip install isort"; exit 1; }
+	@command -v autoflake >/dev/null 2>&1 || { echo "请安装 autoflake: pip install autoflake"; exit 1; }
+	@echo "📝 使用 autoflake 移除未使用的导入和变量..."
+	autoflake --in-place --recursive --remove-all-unused-imports --remove-unused-variables --ignore-init-module-imports .
+	@echo "📝 使用 autopep8 修复 PEP8 问题..."
+	autopep8 --in-place --recursive --max-line-length 88 --ignore E203,W503,F403,F405,F541,E722,W293 .
+	@echo "📦 使用 isort 整理导入语句..."
+	isort --profile black --line-length 88 .
+	@echo "🎨 使用 black 格式化代码..."
+	black --line-length 88 .
+	@echo "✅ 代码自动修复完成"
+
+lint-strict: ## 严格代码检查（包含所有规则）
+	@echo "🔍 严格代码检查..."
+	@command -v flake8 >/dev/null 2>&1 || { echo "请安装 flake8: pip install flake8"; exit 1; }
+	flake8 --max-line-length 88 --ignore E203,W503 .
+	@echo "✅ 严格代码检查完成"
 
 docs: ## 生成文档
 	@echo "📚 生成文档..."

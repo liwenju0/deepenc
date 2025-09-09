@@ -9,7 +9,4 @@
 from .commands import EncryptCLI
 from .main import main
 
-__all__ = [
-    'EncryptCLI',
-    'main'
-]
+__all__ = ["EncryptCLI", "main"]

@@ -7,18 +7,26 @@
 建议优先使用 pyproject.toml。
 """
 
-from setuptools import setup, find_packages
-import os
+
+from setuptools import find_packages, setup
 
 # 读取 README 文件
+
+
 def read_readme():
     with open("README.md", "r", encoding="utf-8") as fh:
         return fh.read()
 
+
 # 读取 requirements.txt
+
+
 def read_requirements():
     with open("requirements.txt", "r", encoding="utf-8") as fh:
-        return [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+        return [
+            line.strip() for line in fh if line.strip() and not line.startswith("#")
+        ]
+
 
 setup(
     name="deepenc",
@@ -50,7 +58,20 @@ setup(
         "Topic :: System :: Distributed Computing",
     ],
     package_dir={"": "."},
-    packages=find_packages(where=".", exclude=["tests*", "test_*", "examples*", "docs*", ".git*", ".cursor*", "build*", "dist*", "*.egg-info*"]),
+    packages=find_packages(
+        where=".",
+        exclude=[
+            "tests*",
+            "test_*",
+            "examples*",
+            "docs*",
+            ".git*",
+            ".cursor*",
+            "build*",
+            "dist*",
+            "*.egg-info*",
+        ],
+    ),
     python_requires=">=3.8",
     install_requires=read_requirements(),
     extras_require={

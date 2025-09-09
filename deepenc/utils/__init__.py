@@ -9,7 +9,4 @@
 from utils.fs import FileSystemUtils
 from utils.logger import setup_logger
 
-__all__ = [
-    'FileSystemUtils',
-    'setup_logger'
-]
+__all__ = ["FileSystemUtils", "setup_logger"]

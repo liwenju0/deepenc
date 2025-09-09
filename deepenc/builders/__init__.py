@@ -6,10 +6,7 @@
 提供项目构建和打包功能。
 """
 
-from .project_builder import ProjectBuilder
 from .packager import ProjectPackager
+from .project_builder import ProjectBuilder
 
-__all__ = [
-    'ProjectBuilder',
-    'ProjectPackager'
-]
+__all__ = ["ProjectBuilder", "ProjectPackager"]

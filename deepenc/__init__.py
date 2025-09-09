@@ -28,25 +28,34 @@ __version__ = "1.0.0"
 __author__ = "AI Assistant"
 __license__ = "MIT"
 
-# 导出主要接口 - 使用相对import
-from .bootstrap import bootstrap, initialize, auto_initialize, quick_start, get_system, shutdown, is_initialized
-from .core import EncryptionError, AuthenticationError
-from .builders.project_builder import ProjectBuilder
-
 # 设置默认的日志级别
 import logging
+
+# 导出主要接口 - 使用相对import
+from .bootstrap import (
+    auto_initialize,
+    bootstrap,
+    get_system,
+    initialize,
+    is_initialized,
+    quick_start,
+    shutdown,
+)
+from .builders.project_builder import ProjectBuilder
+from .core import AuthenticationError, EncryptionError
+
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 __all__ = [
-    'bootstrap',
-    'initialize',
-    'auto_initialize',
-    'quick_start', 
-    'get_system',
-    'shutdown',
-    'is_initialized',
-    'ProjectBuilder',
-    'EncryptionError',
-    'AuthenticationError',
-    '__version__'
+    "bootstrap",
+    "initialize",
+    "auto_initialize",
+    "quick_start",
+    "get_system",
+    "shutdown",
+    "is_initialized",
+    "ProjectBuilder",
+    "EncryptionError",
+    "AuthenticationError",
+    "__version__",
 ]

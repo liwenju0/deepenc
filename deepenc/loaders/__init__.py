@@ -9,7 +9,4 @@
 from .module_loader import SmartModuleLoader
 from .onnx_loader import SmartONNXLoader
 
-__all__ = [
-    'SmartModuleLoader',
-    'SmartONNXLoader'
-]
+__all__ = ["SmartModuleLoader", "SmartONNXLoader"]

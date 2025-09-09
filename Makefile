@@ -116,31 +116,7 @@ test-build:
 
 benchmark: ## 性能基准测试
 	@echo "⚡ 运行性能基准测试..."
-	$(PYTHON) -c "
-import time
-import os
-os.environ['ENCRYPTION_KEY'] = '1234567890123456'
-from core.crypto import AESCrypto
-from core.auth import AuthManager
-
-crypto = AESCrypto()
-auth = AuthManager()
-key = auth.get_key()
-
-# 测试不同大小的文件
-sizes = [1024, 10240, 102400, 1024000]
-for size in sizes:
-    data = os.urandom(size)
-    start = time.time()
-    encrypted = crypto.encrypt(data, key)
-    encrypt_time = time.time() - start
-    
-    start = time.time()
-    decrypted = crypto.decrypt(encrypted, key)
-    decrypt_time = time.time() - start
-    
-    print(f'{size//1024:>6}KB: 加密 {encrypt_time*1000:>6.2f}ms, 解密 {decrypt_time*1000:>6.2f}ms')
-"
+	$(PYTHON) benchmark.py
 	@echo "✅ 基准测试完成"
 
 all: clean install build test verify ## 完整构建流程

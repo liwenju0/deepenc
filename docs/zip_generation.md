@@ -40,7 +40,7 @@ deepenc build --project /path/to/project --genzip --verbose
 ### 密码保护
 
 - 支持从环境变量 `UNZIP_CODE` 读取密码
-- 如果环境变量未设置，使用默认密码：`DC2024hexie`
+- 如果环境变量未设置，使用默认密码：`deepenc`
 - 密码用于保护zip包内容
 
 ### 目录结构
@@ -73,7 +73,7 @@ deepenc build --genzip
 
 ### 使用默认密码
 
-如果不设置环境变量，系统将使用默认密码：`DC2024hex4`
+如果不设置环境变量，系统将使用默认密码：`deepenc`
 
 ## 输出位置
 

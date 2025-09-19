@@ -232,8 +232,8 @@ system.clear_caches()
 ### 2. 并发处理
 
 ```python
-# 设置工作线程数
-os.environ['ENCRYPT_MAX_WORKERS'] = '8'
+# 设置工作线程数（如果支持）
+# os.environ['ENCRYPT_MAX_WORKERS'] = '8'
 
 # 使用线程池处理多个文件
 import concurrent.futures

@@ -213,14 +213,16 @@ AES 加密引擎。
 - `output_path` (str): 输出文件路径
 - `key` (bytes, 可选): 加密密钥
 
-#### `decrypt_file(input_path, output_path, key=None)`
+#### `decrypt_file(input_path, key=None)`
 
-解密文件。
+解密文件到内存。
 
 **参数:**
 - `input_path` (str): 输入文件路径
-- `output_path` (str): 输出文件路径
 - `key` (bytes, 可选): 解密密钥
+
+**返回:**
+- `bytes`: 解密后的数据
 
 ### AuthManager
 

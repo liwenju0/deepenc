@@ -24,7 +24,7 @@ DeepEnc 框架支持多种配置方式，按优先级排序：
 |--------|------|--------|------|
 | `ENCRYPT_CACHE_SIZE` | 缓存大小 (MB) | 无 | `ENCRYPT_CACHE_SIZE="200"` |
 | `ENCRYPT_LOG_LEVEL` | 日志级别 | 无 | `ENCRYPT_LOG_LEVEL="INFO"` |
-| `ENCRYPT_ENC_LEN` | 加密长度 | 无 | `ENCRYPT_ENC_LEN="256"` |
+| `ENCRYPT_ENC_LEN` | 加密长度 | 无 | `ENCRYPT_ENC_LEN="10485760"` |
 
 ## 📄 许可证文件配置
 

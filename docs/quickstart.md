@@ -6,7 +6,7 @@
 
 ```bash
 # 安装依赖
-pip install pycrypto onnxruntime
+pip install deepenc
 
 # 设置开发环境
 mkdir -p /data/appdatas/inference
@@ -45,7 +45,7 @@ python main.py
 import deepenc
 
 # 自动初始化 - 系统会自动查找配置文件
-deepenc.auto_initialize()
+system = deepenc.auto_initialize()
 
 # 现在可以正常导入，系统会自动处理加密/解密
 import onnxruntime as ort

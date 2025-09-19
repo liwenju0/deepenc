@@ -460,7 +460,9 @@ class EncryptCLI:
             zip_path = dist_dir / zip_filename
 
             # 获取压缩密码
-            unzip_code = os.environ.get("UNZIP_CODE", "DC2024hexie")
+            unzip_code = os.environ.get("UNZIP_CODE", "deepenc")
+            if unzip_code == "deepenc":
+                print(f"⚠️ 压缩密码为deepenc，请修改环境变量UNZIP_CODE")
 
             if verbose:
                 print(f"📁 项目名称: {project_name}")

@@ -36,8 +36,9 @@ class EncryptCLI:
         clean=True,
         verbose=False,
         genzip=False,
+        skip_encryption=False,
     ):
-        """构建加密项目
+        """构建项目（支持加密或非加密模式）
 
         Args:
             project_path: 项目路径，默认当前目录
@@ -47,6 +48,8 @@ class EncryptCLI:
             exclude_files: 要排除的文件列表
             clean: 是否清理构建目录
             verbose: 是否显示详细信息
+            genzip: 是否生成ZIP包
+            skip_encryption: 是否跳过加密，仅进行打包
 
         Returns:
             int: 退出码 (0=成功, 1=失败)
@@ -55,11 +58,16 @@ class EncryptCLI:
             project_root = Path(project_path or ".").resolve()
             build_dir = Path(output_dir or project_root / "build").resolve()
 
-            print(f"🔨 构建加密项目")
+            if skip_encryption:
+                print(f"🔨 构建项目（跳过加密模式）")
+            else:
+                print(f"🔨 构建加密项目")
             print(f"📁 项目路径: {project_root}")
             print(f"🏗️ 输出目录: {build_dir}")
             if entry_point:
                 print(f"🚪 项目入口: {entry_point}")
+            if skip_encryption:
+                print(f"🔓 加密模式: 跳过加密，仅进行文件复制和打包")
 
             # 显示排除的目录和文件
             if exclude_dirs:
@@ -73,6 +81,7 @@ class EncryptCLI:
                 build_dir=build_dir,
                 exclude_dirs=exclude_dirs,
                 exclude_files=exclude_files,
+                skip_encryption=skip_encryption,
             )
 
             # 构建项目

@@ -51,7 +51,12 @@ class ProjectBuilder:
     """简化的项目构建器"""
 
     def __init__(
-        self, project_root=None, build_dir=None, exclude_dirs=None, exclude_files=None
+        self,
+        project_root=None,
+        build_dir=None,
+        exclude_dirs=None,
+        exclude_files=None,
+        skip_encryption=False,
     ):
         """初始化项目构建器
 
@@ -60,6 +65,7 @@ class ProjectBuilder:
             build_dir: 构建输出目录
             exclude_dirs: 要排除的目录列表
             exclude_files: 要排除的文件列表
+            skip_encryption: 是否跳过加密，仅进行打包
         """
         # 路径设置
         self.project_root = Path(project_root or ".").resolve()
@@ -70,6 +76,9 @@ class ProjectBuilder:
         # 排除规则
         self.exclude_dirs = set(exclude_dirs or [])
         self.exclude_files = set(exclude_files or [])
+
+        # 加密控制
+        self.skip_encryption = skip_encryption
 
         # 初始化核心组件
         self.scanner = FileScanner(self.project_root)
@@ -83,6 +92,8 @@ class ProjectBuilder:
         self.logger.info("项目构建器初始化完成")
         self.logger.info(f"项目根目录: {self.project_root}")
         self.logger.info(f"构建目录: {self.build_dir}")
+        if self.skip_encryption:
+            self.logger.info("🔓 跳过加密模式：仅进行文件复制和打包")
         if self.exclude_dirs:
             self.logger.info(f"排除目录: {', '.join(self.exclude_dirs)}")
         if self.exclude_files:
@@ -96,13 +107,13 @@ class ProjectBuilder:
         )
 
     def build_project(self, clean=True) -> Dict[str, Any]:
-        """构建加密项目
+        """构建项目（支持加密或非加密模式）
 
         构建流程:
         1. 清理并准备构建目录
         2. 复制项目文件到build目录
-        3. 加密Python文件
-        4. 加密ONNX模型文件
+        3. 如果启用加密：加密Python文件和ONNX模型
+        4. 如果跳过加密：仅复制文件，不进行加密
 
         Args:
             clean: 是否清理构建目录
@@ -111,7 +122,10 @@ class ProjectBuilder:
             Dict[str, Any]: 构建结果信息
         """
         try:
-            self.logger.info("开始构建加密项目...")
+            if self.skip_encryption:
+                self.logger.info("开始构建项目（跳过加密模式）...")
+            else:
+                self.logger.info("开始构建加密项目...")
             start_time = datetime.now()
 
             # 步骤1: 准备构建目录
@@ -120,11 +134,16 @@ class ProjectBuilder:
             # 步骤2: 复制项目文件
             self._copy_project_files()
 
-            # 步骤3: 加密Python文件
-            python_result = self._encrypt_python_files()
-
-            # 步骤4: 加密ONNX模型
-            onnx_result = self._encrypt_onnx_files()
+            # 步骤3和4: 根据配置决定是否加密
+            if self.skip_encryption:
+                # 跳过加密模式：仅复制文件
+                python_result = {}
+                onnx_result = {}
+                self.logger.info("跳过加密，保持原始文件")
+            else:
+                # 加密模式：加密Python文件和ONNX模型
+                python_result = self._encrypt_python_files()
+                onnx_result = self._encrypt_onnx_files()
 
             # 计算构建时间
             end_time = datetime.now()
@@ -138,10 +157,14 @@ class ProjectBuilder:
                 "duration_seconds": duration,
                 "encrypted_python_files": len(python_result),
                 "encrypted_onnx_files": len(onnx_result),
+                "skip_encryption": self.skip_encryption,
                 "build_dir": str(self.build_dir),
             }
 
-            self.logger.info("项目构建成功完成")
+            if self.skip_encryption:
+                self.logger.info("项目构建成功完成（未加密）")
+            else:
+                self.logger.info("项目构建成功完成")
             self._print_build_summary(build_report)
 
             return build_report
@@ -168,7 +191,28 @@ class ProjectBuilder:
             if self._should_copy_item(item):
                 self._copy_item(item)
 
+        # 如果跳过加密模式，清理可能存在的加密文件
+        if self.skip_encryption:
+            self._clean_encrypted_files()
+
         self.logger.info("项目文件复制完成")
+
+    def _clean_encrypted_files(self):
+        """清理构建目录中的加密文件"""
+        if not self.build_dir.exists():
+            return
+
+        # 清理.encrypted文件
+        for encrypted_file in self.build_dir.rglob("*.encrypted"):
+            encrypted_file.unlink()
+            self.logger.debug(f"已清理加密文件: {encrypted_file.relative_to(self.build_dir)}")
+
+        # 清理.encrypt文件
+        for encrypted_file in self.build_dir.rglob("*.encrypt"):
+            encrypted_file.unlink()
+            self.logger.debug(f"已清理加密文件: {encrypted_file.relative_to(self.build_dir)}")
+
+        self.logger.info("已清理构建目录中的加密文件")
 
     def _should_copy_item(self, item: Path) -> bool:
         """判断是否应该复制项目项"""
@@ -330,15 +374,26 @@ class ProjectBuilder:
         print("\n📊 构建摘要:")
         duration = build_report["duration_seconds"]
         print(f"  ⏱️  构建时间: {duration:.2f} 秒")
-        print(f"  🐍 Python 文件: {build_report['encrypted_python_files']} 个")
-        print(f"  🧠 ONNX 模型: {build_report['encrypted_onnx_files']} 个")
-        print(f"  📁 构建目录: {build_report['build_dir']}")
 
-        print("\n🎯 重要说明:")
-        print("  ✅ 整个项目已复制到build目录")
-        print("  ✅ 指定目录已排除（release、3thirdParty等）")
-        print("  ✅ src/grpc_main.py 未被加密")
-        print("  📝 请在grpc_main.py中添加加密loader进行解密")
+        if build_report.get("skip_encryption", False):
+            print(f"  🔓 加密模式: 跳过加密")
+            print(f"  📁 构建目录: {build_report['build_dir']}")
+
+            print("\n🎯 重要说明:")
+            print("  ✅ 整个项目已复制到build目录")
+            print("  ✅ 指定目录已排除（release、3thirdParty等）")
+            print("  🔓 所有文件保持原始状态，未进行加密")
+            print("  📦 可直接用于打包分发")
+        else:
+            print(f"  🐍 Python 文件: {build_report['encrypted_python_files']} 个")
+            print(f"  🧠 ONNX 模型: {build_report['encrypted_onnx_files']} 个")
+            print(f"  📁 构建目录: {build_report['build_dir']}")
+
+            print("\n🎯 重要说明:")
+            print("  ✅ 整个项目已复制到build目录")
+            print("  ✅ 指定目录已排除（release、3thirdParty等）")
+            print("  ✅ src/grpc_main.py 未被加密")
+            print("  📝 请在grpc_main.py中添加加密loader进行解密")
 
     def clean_build(self) -> None:
         """清理构建目录"""

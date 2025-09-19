@@ -2,17 +2,21 @@
 # -*- coding: utf-8 -*-
 
 from setuptools import setup, find_packages
-import os
+
 
 # 读取README文件
 def read_readme():
     with open("README.md", "r", encoding="utf-8") as fh:
         return fh.read()
 
+
 # 读取requirements文件
 def read_requirements():
     with open("requirements.txt", "r", encoding="utf-8") as fh:
-        return [line.strip() for line in fh if line.strip() and not line.startswith("#")]
+        return [
+            line.strip() for line in fh if line.strip() and not line.startswith("#")
+        ]
+
 
 setup(
     name="deepenc",

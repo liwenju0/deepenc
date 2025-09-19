@@ -155,10 +155,11 @@ class AuthManager:
 
         DEV 模式：许可证文件内容即为原始未加密的 key。
         非 DEV 模式：许可证文件内容为加密数据，需要通过 hardware_auth 解密得到 key。
+        如果硬件授权不可用，则降级到开发模式。
         """
         try:
-            # 如果有硬件授权，尝试获取设备特定的许可证文件
-            if self.hardware_auth:
+            # 如果有可用的硬件授权，尝试获取设备特定的许可证文件
+            if self._is_hardware_auth_available():
                 try:
                     device_id = self.hardware_auth.get_device_id()
                     license_file = "/data/appdatas/inference/{}.license".format(
@@ -185,9 +186,10 @@ class AuthManager:
                     return license_str if license_str else None
                 else:
                     # 非开发模式：需要通过硬件授权解密
-                    if not self.hardware_auth:
-                        print("非 DEV 模式缺少 hardware_auth，无法解密许可证")
-                        return None
+                    if not self._is_hardware_auth_available():
+                        print("⚠️ 非 DEV 模式缺少可用的硬件授权，降级到开发模式")
+                        # 降级到开发模式：直接使用文件中的原始 key
+                        return license_str if license_str else None
                     decrypted = self.hardware_auth.decrypt_license(license_str)
                     decrypted = decrypted.strip() if decrypted else ""
                     return decrypted if decrypted else None
@@ -232,11 +234,23 @@ class AuthManager:
         """
         return {
             "auth_mode": os.environ.get("AUTH_MODE", "DEV"),
-            "hardware_auth_available": self.hardware_auth is not None,
+            "hardware_auth_available": self._is_hardware_auth_available(),
             "key_source": self._get_key_source(),
             "key_length": len(self.encryption_key) if self.encryption_key else 0,
             "authorization_valid": self.verify_authorization(),
         }
+
+    def _is_hardware_auth_available(self):
+        """检查硬件授权是否真正可用
+        
+        Returns:
+            bool: 硬件授权是否可用
+        """
+        if not self.hardware_auth:
+            return False
+        
+        # 检查硬件授权对象内部的 ukey_handler 是否可用
+        return self.hardware_auth.ukey_handler is not None
 
     def _get_key_source(self):
         """获取密钥来源"""
@@ -244,7 +258,7 @@ class AuthManager:
             return "none"
 
         auth_mode = os.environ.get("AUTH_MODE", "DEV")
-        if self.hardware_auth and auth_mode != "DEV":
+        if self._is_hardware_auth_available() and auth_mode != "DEV":
             return "hardware_decrypted_license"
         elif os.path.exists("/data/appdatas/inference/license.dat"):
             return "license_file"

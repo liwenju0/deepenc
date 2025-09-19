@@ -11,6 +11,7 @@
 """
 
 import logging
+import os
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -139,7 +140,17 @@ class ProjectBuilder:
                 # 跳过加密模式：仅复制文件
                 python_result = {}
                 onnx_result = {}
-                self.logger.info("跳过加密，保持原始文件")
+                
+                # 获取文件统计信息用于日志
+                discovery_info = self._get_discovery_info()
+                total_python = discovery_info.get("total_python_files", 0)
+                total_onnx = discovery_info.get("total_onnx_files", 0)
+                excluded_info = self._get_excluded_files_info()
+                total_excluded = excluded_info.get("total_excluded", 0)
+                
+                self.logger.info(f"🔓 跳过加密模式：发现 {total_python} 个Python文件，{total_onnx} 个ONNX模型")
+                self.logger.info(f"📋 排除文件：{total_excluded} 个文件被排除加密")
+                self.logger.info("✅ 所有文件保持原始状态，未进行加密")
             else:
                 # 加密模式：加密Python文件和ONNX模型
                 python_result = self._encrypt_python_files()
@@ -149,6 +160,9 @@ class ProjectBuilder:
             end_time = datetime.now()
             duration = (end_time - start_time).total_seconds()
 
+            # 获取文件发现信息
+            discovery_info = self._get_discovery_info()
+            
             # 创建构建报告
             build_report = {
                 "success": True,
@@ -159,6 +173,33 @@ class ProjectBuilder:
                 "encrypted_onnx_files": len(onnx_result),
                 "skip_encryption": self.skip_encryption,
                 "build_dir": str(self.build_dir),
+                "build_info": {
+                    "start_time": start_time.isoformat(),
+                    "end_time": end_time.isoformat(),
+                    "duration_seconds": duration,
+                    "success": True,
+                    "project_root": str(self.project_root),
+                    "build_dir": str(self.build_dir),
+                },
+                "discovery": discovery_info,
+                "encryption": {
+                    "python_files_processed": len(python_result),
+                    "onnx_files_processed": len(onnx_result),
+                    "skip_encryption": self.skip_encryption,
+                    "excluded_files": self._get_excluded_files_info(),
+                },
+                "output": {
+                    "build_dir": str(self.build_dir),
+                    "build_dir_exists": self.build_dir.exists(),
+                    "total_files_copied": self._count_copied_files(),
+                },
+                "auth_info": {
+                    "auth_mode": os.environ.get("AUTH_MODE", "DEV"),
+                    "license_available": self._check_license_availability(),
+                    "key_source": self._get_key_source(),
+                    "hardware_auth_available": self._check_hardware_auth(),
+                    "authorization_valid": self._check_authorization_valid(),
+                }
             }
 
             if self.skip_encryption:
@@ -378,6 +419,24 @@ class ProjectBuilder:
         if build_report.get("skip_encryption", False):
             print(f"  🔓 加密模式: 跳过加密")
             print(f"  📁 构建目录: {build_report['build_dir']}")
+            
+            # 显示文件统计信息
+            discovery = build_report.get("discovery", {})
+            if discovery:
+                print(f"  📊 文件统计: {discovery.get('total_files', 0)} 个文件")
+                print(f"    - Python 文件: {discovery.get('total_python_files', 0)} 个")
+                print(f"    - ONNX 模型: {discovery.get('total_onnx_files', 0)} 个")
+            
+            # 显示排除信息
+            encryption = build_report.get("encryption", {})
+            excluded = encryption.get("excluded_files", {})
+            if excluded.get("total_excluded", 0) > 0:
+                print(f"  🚫 排除文件: {excluded.get('total_excluded', 0)} 个")
+            
+            # 显示输出信息
+            output = build_report.get("output", {})
+            if output.get("total_files_copied", 0) > 0:
+                print(f"  📋 复制文件: {output.get('total_files_copied', 0)} 个")
 
             print("\n🎯 重要说明:")
             print("  ✅ 整个项目已复制到build目录")
@@ -414,3 +473,115 @@ class ProjectBuilder:
             "build_dir": str(self.build_dir),
             "build_dir_exists": self.build_dir.exists(),
         }
+
+    def _get_discovery_info(self) -> Dict[str, Any]:
+        """获取文件发现信息"""
+        try:
+            # 重新扫描文件以获取准确信息
+            all_files = self.scanner.discover_all_files()
+            python_files = all_files.get("python_files", [])
+            onnx_files = all_files.get("onnx_files", [])
+            
+            return {
+                "total_python_files": len(python_files),
+                "total_onnx_files": len(onnx_files),
+                "total_files": len(python_files) + len(onnx_files),
+                "python_files": [str(f["file_path"]) for f in python_files],
+                "onnx_files": [str(f["file_path"]) for f in onnx_files],
+            }
+        except Exception as e:
+            self.logger.warning(f"获取文件发现信息失败: {e}")
+            return {
+                "total_python_files": 0,
+                "total_onnx_files": 0,
+                "total_files": 0,
+                "python_files": [],
+                "onnx_files": [],
+            }
+
+    def _get_excluded_files_info(self) -> Dict[str, Any]:
+        """获取排除文件信息"""
+        try:
+            all_files = self.scanner.discover_all_files()
+            python_files = all_files.get("python_files", [])
+            onnx_files = all_files.get("onnx_files", [])
+            
+            excluded_python = []
+            excluded_onnx = []
+            
+            # 检查排除的Python文件
+            for file_info in python_files:
+                if self._should_exclude_from_encryption(file_info):
+                    excluded_python.append(str(file_info["file_path"]))
+            
+            # 检查排除的ONNX文件
+            for file_info in onnx_files:
+                if self._should_exclude_from_encryption(file_info):
+                    excluded_onnx.append(str(file_info["file_path"]))
+            
+            return {
+                "excluded_python_files": excluded_python,
+                "excluded_onnx_files": excluded_onnx,
+                "total_excluded": len(excluded_python) + len(excluded_onnx),
+                "exclusion_rules": {
+                    "excluded_encrypt_files": BuildConstants.EXCLUDED_ENCRYPT_FILES,
+                    "excluded_copy_dirs": BuildConstants.EXCLUDED_COPY_DIRS,
+                }
+            }
+        except Exception as e:
+            self.logger.warning(f"获取排除文件信息失败: {e}")
+            return {
+                "excluded_python_files": [],
+                "excluded_onnx_files": [],
+                "total_excluded": 0,
+                "exclusion_rules": {}
+            }
+
+    def _count_copied_files(self) -> int:
+        """统计复制的文件数量"""
+        try:
+            if not self.build_dir.exists():
+                return 0
+            
+            # 递归统计构建目录中的文件数量
+            file_count = 0
+            for file_path in self.build_dir.rglob("*"):
+                if file_path.is_file():
+                    file_count += 1
+            
+            return file_count
+        except Exception as e:
+            self.logger.warning(f"统计复制文件数量失败: {e}")
+            return 0
+
+    def _check_license_availability(self) -> bool:
+        """检查许可证文件是否可用"""
+        try:
+            license_file = Path("/data/appdatas/inference/license.dat")
+            return license_file.exists() and license_file.stat().st_size > 0
+        except Exception:
+            return False
+
+    def _get_key_source(self) -> str:
+        """获取密钥来源"""
+        try:
+            # 尝试获取认证管理器的密钥来源信息
+            auth_info = self.auth_manager.get_auth_info()
+            return auth_info.get("key_source", "unknown")
+        except Exception:
+            return "unknown"
+
+    def _check_hardware_auth(self) -> bool:
+        """检查硬件授权是否可用"""
+        try:
+            auth_info = self.auth_manager.get_auth_info()
+            return auth_info.get("hardware_auth_available", False)
+        except Exception:
+            return False
+
+    def _check_authorization_valid(self) -> bool:
+        """检查授权是否有效"""
+        try:
+            return self.auth_manager.verify_authorization()
+        except Exception:
+            return False

@@ -8,8 +8,6 @@
 """
 
 import atexit
-import os
-import tempfile
 from pathlib import Path
 
 from ..core.auth import AuthManager
@@ -37,7 +35,6 @@ class SmartONNXLoader:
 
         self.crypto = AESCrypto()
         self.auth_manager = AuthManager()
-        self._temp_files = set()
         self._model_cache = {}  # 模型会话缓存
         self._original_inference_session = ort.InferenceSession
 
@@ -145,24 +142,14 @@ class SmartONNXLoader:
             # 解密模型到内存
             decrypted_model = self.crypto.decrypt_file(encrypted_path, encryption_key)
 
-            # 创建临时文件
-            tmp_file = tempfile.NamedTemporaryFile(
-                delete=False, suffix=".onnx", prefix="decrypted_model_"
-            )
-            tmp_file.write(decrypted_model)
-            tmp_file.close()
-
-            self._temp_files.add(tmp_file.name)
-
-            # 创建推理会话
-            session = self._original_inference_session(tmp_file.name, **kwargs)
+            # 直接从内存中的二进制数据创建推理会话
+            session = self._original_inference_session(decrypted_model, **kwargs)
 
             # 缓存会话
             self._model_cache[cache_key] = session
 
-            # 将清理方法附加到会话
-            session._encrypted_temp_file = tmp_file.name
-            session._cleanup = lambda: self._cleanup_file(tmp_file.name)
+            # 将清理方法附加到会话（不再需要临时文件清理）
+            session._cleanup = lambda: None
 
             print(f"✅ 成功加载加密模型: {encrypted_path}")
             return session
@@ -170,28 +157,11 @@ class SmartONNXLoader:
         except Exception as e:
             raise LoaderError(f"加载加密模型失败 {encrypted_path}: {e}")
 
-    def _cleanup_file(self, tmp_file):
-        """清理单个临时文件
-
-        Args:
-            tmp_file: 临时文件路径
-        """
-        if tmp_file in self._temp_files:
-            try:
-                os.unlink(tmp_file)
-                self._temp_files.remove(tmp_file)
-                print(f"🧹 清理临时文件: {os.path.basename(tmp_file)}")
-            except Exception as e:
-                print(f"⚠️ 清理临时文件失败 {tmp_file}: {e}")
-
     def cleanup_all(self):
-        """清理所有临时文件"""
-        temp_count = len(self._temp_files)
-        for tmp_file in list(self._temp_files):
-            self._cleanup_file(tmp_file)
-
-        if temp_count > 0:
-            print(f"🧹 清理了 {temp_count} 个临时文件")
+        """清理所有资源"""
+        # 清理模型缓存
+        self._model_cache.clear()
+        print("🧹 模型缓存已清理")
 
     def get_cache_info(self):
         """获取缓存信息
@@ -201,9 +171,7 @@ class SmartONNXLoader:
         """
         return {
             "cached_models": len(self._model_cache),
-            "temp_files": len(self._temp_files),
             "cache_keys": list(self._model_cache.keys()),
-            "temp_file_paths": list(self._temp_files),
         }
 
     def clear_cache(self):

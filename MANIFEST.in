@@ -10,9 +10,7 @@ include deepenc/core/*.so
 
 # 包含文档
 include README.md
-include LICENSE
 include requirements.txt
-include pyproject.toml
 
 # 包含配置文件
 include *.toml

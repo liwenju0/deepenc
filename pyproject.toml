@@ -7,7 +7,7 @@ name = "deepenc"
 version = "1.0.0"
 description = "Python 项目加密分发框架 - 一个简洁、强大的 Python 项目加密分发框架"
 readme = "README.md"
-license = "MIT"
+# license = "MIT"
 authors = [
     {name = "liwenju0", email = "liwenjudetiankong@126.com"}
 ]

@@ -4,15 +4,9 @@ recursive-include * *.py
 
 # 包含编译后的二进制文件
 recursive-include * *.so
-recursive-include * *.pyd
-recursive-include * *.dll
-recursive-include * *.dylib
 
 # 确保 core 目录下的 .so 文件被包含
 include deepenc/core/*.so
-include deepenc/core/*.pyd
-include deepenc/core/*.dll
-include deepenc/core/*.dylib
 
 # 包含文档
 include README.md
@@ -21,8 +15,6 @@ include requirements.txt
 include pyproject.toml
 
 # 包含配置文件
-include *.cfg
-include *.ini
 include *.toml
 
 # 排除不需要的文件

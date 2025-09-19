@@ -7,7 +7,7 @@ name = "deepenc"
 version = "1.0.0"
 description = "Python 项目加密分发框架 - 一个简洁、强大的 Python 项目加密分发框架"
 readme = "README.md"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "liwenju0", email = "liwenjudetiankong@126.com"}
 ]
@@ -18,7 +18,6 @@ keywords = ["encryption", "distribution", "python", "security", "onnx"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",

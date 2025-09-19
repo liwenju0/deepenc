@@ -5,14 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "deepenc"
 version = "1.0.0"
-description = "Python 项目加密分发框架 - 一个简洁、强大的 Python 项目加密分发框架，具有 Linux 架构审美"
+description = "Python 项目加密分发框架 - 一个简洁、强大的 Python 项目加密分发框架"
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "AI Assistant", email = "ai@example.com"}
+    {name = "liwenju0", email = "liwenjudetiankong@126.com"}
 ]
 maintainers = [
-    {name = "AI Assistant", email = "ai@example.com"}
+    {name = "liwenju0", email = "liwenjudetiankong@126.com"}
 ]
 keywords = ["encryption", "distribution", "python", "security", "onnx"]
 classifiers = [
@@ -50,11 +50,11 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/your-repo/deepenc"
+Homepage = "https://github.com/liwenju0/deepenc"
 Documentation = "https://deepenc.readthedocs.io/"
-Repository = "https://github.com/your-repo/deepenc.git"
-"Bug Tracker" = "https://github.com/your-repo/deepenc/issues"
-"Release Notes" = "https://github.com/your-repo/deepenc/releases"
+Repository = "https://github.com/liwenju0/deepenc.git"
+"Bug Tracker" = "https://github.com/liwenju0/deepenc/issues"
+"Release Notes" = "https://github.com/liwenju0/deepenc/releases"
 
 [project.scripts]
 deepenc = "deepenc.cli.main:main"

@@ -6,7 +6,7 @@
 提供通用的工具函数。
 """
 
-from utils.fs import FileSystemUtils
-from utils.logger import setup_logger
+from .fs import FileSystemUtils
+from .logger import setup_logger
 
 __all__ = ["FileSystemUtils", "setup_logger"]

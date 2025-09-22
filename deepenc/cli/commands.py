@@ -38,6 +38,7 @@ class EncryptCLI:
         clean=True,
         verbose=False,
         genzip=False,
+        zip_stored=False,
         skip_encryption=False,
     ):
         """构建项目（支持加密或非加密模式）
@@ -51,6 +52,7 @@ class EncryptCLI:
             clean: 是否清理构建目录
             verbose: 是否显示详细信息
             genzip: 是否生成ZIP包
+            zip_stored: 是否使用ZIP_STORED模式（不压缩，直接存储）
             skip_encryption: 是否跳过加密，仅进行打包
 
         Returns:
@@ -98,7 +100,7 @@ class EncryptCLI:
             if genzip:
                 print("Generating ZIP package...")
                 zip_result = self._generate_project_zip(
-                    project_root, build_dir, verbose
+                    project_root, build_dir, verbose, zip_stored
                 )
                 if zip_result:
                     print(f"ZIP package created: {zip_result}")
@@ -343,13 +345,14 @@ class EncryptCLI:
             print(f"Model Cache: {onnx_cache.get('cached_models', 0)} models")
             print(f"Temp Files: {onnx_cache.get('temp_files', 0)} files")
 
-    def _generate_project_zip(self, project_root, build_dir, verbose=False):
+    def _generate_project_zip(self, project_root, build_dir, verbose=False, zip_stored=False):
         """生成项目zip包
 
         Args:
             project_root: 项目根目录
             build_dir: 构建目录
             verbose: 是否显示详细信息
+            zip_stored: 是否使用ZIP_STORED模式（不压缩，直接存储）
 
         Returns:
             str: 生成的zip包路径，失败返回None
@@ -390,14 +393,19 @@ class EncryptCLI:
             if unzip_code == "deepenc":
                 print("Warning: Using default password 'deepenc', set UNZIP_CODE environment variable")
 
+            # 选择压缩模式
+            compression_mode = zipfile.ZIP_STORED if zip_stored else zipfile.ZIP_DEFLATED
+            compression_name = "STORED (no compression)" if zip_stored else "DEFLATED (compressed)"
+
             if verbose:
                 print(f"Project: {project_name}")
                 print(f"Version: {version}")
                 print(f"Password: {unzip_code}")
+                print(f"Compression: {compression_name}")
                 print(f"Target: {zip_path}")
 
             # 创建带密码的zip文件
-            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+            with zipfile.ZipFile(zip_path, "w", compression_mode) as zipf:
                 # 遍历构建目录中的所有文件
                 for file_path in build_dir.rglob("*"):
                     if file_path.is_file():

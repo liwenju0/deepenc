@@ -33,7 +33,6 @@ def create_parser():
   deepenc build -xf *.log -xf *.tmp               # 排除日志和临时文件
   deepenc build --genzip                          # 构建完成后生成zip包
   deepenc build --genzip --zip-stored            # 生成zip包，使用STORED模式（不压缩）
-  deepenc build --skip-encryption                # 跳过加密，仅进行文件复制和打包
   deepenc scan                                     # 扫描当前项目
   deepenc status                                   # 显示系统状态
   deepenc clean                                    # 清理构建目录
@@ -72,9 +71,6 @@ def create_parser():
         "--zip-stored", 
         action="store_true", 
         help="使用ZIP_STORED模式（不压缩，直接存储），默认使用ZIP_DEFLATED压缩"
-    )
-    build_parser.add_argument(
-        "--skip-encryption", action="store_true", help="跳过加密，仅进行文件复制和打包"
     )
 
     # scan 命令
@@ -143,7 +139,6 @@ def main():
                 verbose=args.verbose,
                 genzip=args.genzip,
                 zip_stored=args.zip_stored,
-                skip_encryption=args.skip_encryption,
             )
 
         elif args.command == "scan":

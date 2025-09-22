@@ -24,7 +24,6 @@ class BuildInfo:
     build_dir: str
     files_processed: int
     files_encrypted: int
-    skip_encryption: bool = False
     project_root: Optional[str] = None
     start_time: Optional[str] = None
     end_time: Optional[str] = None
@@ -53,10 +52,7 @@ class BuildOutputFormatter:
         lines.append(f"  Build Directory: {info.build_dir}")
         lines.append(f"  Files Processed: {info.files_processed}")
         
-        if info.skip_encryption:
-            lines.append(f"  Encryption: SKIPPED")
-        else:
-            lines.append(f"  Files Encrypted: {info.files_encrypted}")
+        lines.append(f"  Files Encrypted: {info.files_encrypted}")
         
         return "\n".join(lines)
     
@@ -90,12 +86,8 @@ class BuildOutputFormatter:
         lines.append("\nFile Processing:")
         lines.append(f"  Files Processed: {info.files_processed}")
         
-        if info.skip_encryption:
-            lines.append(f"  Encryption: SKIPPED")
-            lines.append("  Note: All files copied without encryption")
-        else:
-            lines.append(f"  Files Encrypted: {info.files_encrypted}")
-            lines.append("  Note: Python files and ONNX models encrypted")
+        lines.append(f"  Files Encrypted: {info.files_encrypted}")
+        lines.append("  Note: Python files and ONNX models encrypted")
         
         return "\n".join(lines)
     
@@ -116,7 +108,6 @@ class BuildOutputFormatter:
             "build_dir": info.build_dir,
             "files_processed": info.files_processed,
             "files_encrypted": info.files_encrypted,
-            "skip_encryption": info.skip_encryption,
             "project_root": info.project_root,
             "start_time": info.start_time,
             "end_time": info.end_time,
@@ -134,7 +125,7 @@ class BuildOutputFormatter:
             str: 简单的单行输出
         """
         status = "OK" if info.success else "FAILED"
-        encryption = "SKIP" if info.skip_encryption else f"{info.files_encrypted}"
+        encryption = f"{info.files_encrypted}"
         
         return f"BUILD {status} {info.duration:.2f}s {info.files_processed} files {encryption} encrypted"
 
@@ -159,7 +150,6 @@ def create_build_info_from_report(build_report: Dict[str, Any]) -> BuildInfo:
         files_processed=discovery.get("total_files", 0),
         files_encrypted=encryption.get("python_files_processed", 0) + 
                        encryption.get("onnx_files_processed", 0),
-        skip_encryption=build_report.get("skip_encryption", False),
         project_root=build_info.get("project_root"),
         start_time=build_info.get("start_time"),
         end_time=build_info.get("end_time"),

@@ -39,9 +39,8 @@ class EncryptCLI:
         verbose=False,
         genzip=False,
         zip_stored=False,
-        skip_encryption=False,
     ):
-        """构建项目（支持加密或非加密模式）
+        """构建项目
 
         Args:
             project_path: 项目路径，默认当前目录
@@ -53,7 +52,6 @@ class EncryptCLI:
             verbose: 是否显示详细信息
             genzip: 是否生成ZIP包
             zip_stored: 是否使用ZIP_STORED模式（不压缩，直接存储）
-            skip_encryption: 是否跳过加密，仅进行打包
 
         Returns:
             int: 退出码 (0=成功, 1=失败)
@@ -67,10 +65,7 @@ class EncryptCLI:
             print(f"Output directory: {build_dir}")
             if entry_point:
                 print(f"Entry point: {entry_point}")
-            if skip_encryption:
-                print("Encryption: SKIPPED")
-            else:
-                print("Encryption: ENABLED")
+            print("Encryption: ENABLED")
             
             if exclude_dirs:
                 print(f"Excluded directories: {', '.join(exclude_dirs)}")
@@ -83,7 +78,6 @@ class EncryptCLI:
                 build_dir=build_dir,
                 exclude_dirs=exclude_dirs,
                 exclude_files=exclude_files,
-                skip_encryption=skip_encryption,
             )
 
             # 构建项目

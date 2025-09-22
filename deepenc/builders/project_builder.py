@@ -57,7 +57,6 @@ class ProjectBuilder:
         build_dir=None,
         exclude_dirs=None,
         exclude_files=None,
-        skip_encryption=False,
     ):
         """初始化项目构建器
 
@@ -66,7 +65,6 @@ class ProjectBuilder:
             build_dir: 构建输出目录
             exclude_dirs: 要排除的目录列表
             exclude_files: 要排除的文件列表
-            skip_encryption: 是否跳过加密，仅进行打包
         """
         # 路径设置
         self.project_root = Path(project_root or ".").resolve()
@@ -78,8 +76,6 @@ class ProjectBuilder:
         self.exclude_dirs = set(exclude_dirs or [])
         self.exclude_files = set(exclude_files or [])
 
-        # 加密控制
-        self.skip_encryption = skip_encryption
 
         # 初始化核心组件
         self.scanner = FileScanner(self.project_root)
@@ -93,8 +89,6 @@ class ProjectBuilder:
         self.logger.info("项目构建器初始化完成")
         self.logger.info(f"项目根目录: {self.project_root}")
         self.logger.info(f"构建目录: {self.build_dir}")
-        if self.skip_encryption:
-            self.logger.info("🔓 跳过加密模式：仅进行文件复制和打包")
         if self.exclude_dirs:
             self.logger.info(f"排除目录: {', '.join(self.exclude_dirs)}")
         if self.exclude_files:
@@ -123,10 +117,7 @@ class ProjectBuilder:
             Dict[str, Any]: 构建结果信息
         """
         try:
-            if self.skip_encryption:
-                self.logger.info("开始构建项目（跳过加密模式）...")
-            else:
-                self.logger.info("开始构建加密项目...")
+            self.logger.info("开始构建加密项目...")
             start_time = datetime.now()
 
             # 步骤1: 准备构建目录
@@ -135,26 +126,9 @@ class ProjectBuilder:
             # 步骤2: 复制项目文件
             self._copy_project_files()
 
-            # 步骤3和4: 根据配置决定是否加密
-            if self.skip_encryption:
-                # 跳过加密模式：仅复制文件
-                python_result = {}
-                onnx_result = {}
-                
-                # 获取文件统计信息用于日志
-                discovery_info = self._get_discovery_info()
-                total_python = discovery_info.get("total_python_files", 0)
-                total_onnx = discovery_info.get("total_onnx_files", 0)
-                excluded_info = self._get_excluded_files_info()
-                total_excluded = excluded_info.get("total_excluded", 0)
-                
-                self.logger.info(f"🔓 跳过加密模式：发现 {total_python} 个Python文件，{total_onnx} 个ONNX模型")
-                self.logger.info(f"📋 排除文件：{total_excluded} 个文件被排除加密")
-                self.logger.info("✅ 所有文件保持原始状态，未进行加密")
-            else:
-                # 加密模式：加密Python文件和ONNX模型
-                python_result = self._encrypt_python_files()
-                onnx_result = self._encrypt_onnx_files()
+            # 步骤3和4: 加密Python文件和ONNX模型
+            python_result = self._encrypt_python_files()
+            onnx_result = self._encrypt_onnx_files()
 
             # 计算构建时间
             end_time = datetime.now()
@@ -171,7 +145,6 @@ class ProjectBuilder:
                 "duration_seconds": duration,
                 "encrypted_python_files": len(python_result),
                 "encrypted_onnx_files": len(onnx_result),
-                "skip_encryption": self.skip_encryption,
                 "build_dir": str(self.build_dir),
                 "build_info": {
                     "start_time": start_time.isoformat(),
@@ -185,7 +158,6 @@ class ProjectBuilder:
                 "encryption": {
                     "python_files_processed": len(python_result),
                     "onnx_files_processed": len(onnx_result),
-                    "skip_encryption": self.skip_encryption,
                     "excluded_files": self._get_excluded_files_info(),
                 },
                 "output": {
@@ -202,10 +174,7 @@ class ProjectBuilder:
                 }
             }
 
-            if self.skip_encryption:
-                self.logger.info("项目构建成功完成（未加密）")
-            else:
-                self.logger.info("项目构建成功完成")
+            self.logger.info("项目构建成功完成")
             self._print_build_summary(build_report)
 
             return build_report
@@ -232,9 +201,6 @@ class ProjectBuilder:
             if self._should_copy_item(item):
                 self._copy_item(item)
 
-        # 如果跳过加密模式，清理可能存在的加密文件
-        if self.skip_encryption:
-            self._clean_encrypted_files()
 
         self.logger.info("项目文件复制完成")
 
@@ -416,43 +382,15 @@ class ProjectBuilder:
         duration = build_report["duration_seconds"]
         print(f"  Duration: {duration:.2f}s")
 
-        if build_report.get("skip_encryption", False):
-            print(f"  Encryption: SKIPPED")
-            print(f"  Build Directory: {build_report['build_dir']}")
-            
-            # 显示文件统计信息
-            discovery = build_report.get("discovery", {})
-            if discovery:
-                print(f"  Files: {discovery.get('total_files', 0)} total")
-                print(f"    - Python: {discovery.get('total_python_files', 0)}")
-                print(f"    - ONNX: {discovery.get('total_onnx_files', 0)}")
-            
-            # 显示排除信息
-            encryption = build_report.get("encryption", {})
-            excluded = encryption.get("excluded_files", {})
-            if excluded.get("total_excluded", 0) > 0:
-                print(f"  Excluded: {excluded.get('total_excluded', 0)} files")
-            
-            # 显示输出信息
-            output = build_report.get("output", {})
-            if output.get("total_files_copied", 0) > 0:
-                print(f"  Copied: {output.get('total_files_copied', 0)} files")
+        print(f"  Python Files: {build_report['encrypted_python_files']}")
+        print(f"  ONNX Models: {build_report['encrypted_onnx_files']}")
+        print(f"  Build Directory: {build_report['build_dir']}")
 
-            print("\nNotes:")
-            print("  - Project copied to build directory")
-            print("  - Excluded directories: release, 3thirdParty, etc.")
-            print("  - All files remain unencrypted")
-            print("  - Ready for packaging")
-        else:
-            print(f"  Python Files: {build_report['encrypted_python_files']}")
-            print(f"  ONNX Models: {build_report['encrypted_onnx_files']}")
-            print(f"  Build Directory: {build_report['build_dir']}")
-
-            print("\nNotes:")
-            print("  - Project copied to build directory")
-            print("  - Excluded directories: release, 3thirdParty, etc.")
-            print("  - src/grpc_main.py not encrypted")
-            print("  - Add encryption loader to grpc_main.py")
+        print("\nNotes:")
+        print("  - Project copied to build directory")
+        print("  - Excluded directories: release, 3thirdParty, etc.")
+        print("  - src/grpc_main.py not encrypted")
+        print("  - Add encryption loader to grpc_main.py")
 
     def clean_build(self) -> None:
         """清理构建目录"""

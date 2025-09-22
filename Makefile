@@ -1,6 +1,6 @@
 # DeepEnc Python 项目加密分发框架 Makefile
 
-.PHONY: help build build-no-encrypt clean install test check
+.PHONY: help build clean install test check
 
 # 默认目标
 .DEFAULT_GOAL := help
@@ -21,20 +21,12 @@ build: ## 构建加密项目
 	$(PYTHON) -m deepenc build --verbose
 	@echo "✅ 构建完成"
 
-build-no-encrypt: ## 构建项目（跳过加密，仅打包）
-	@echo "🔨 构建项目（跳过加密模式）..."
-	$(PYTHON) -m deepenc build --verbose --skip-encryption
-	@echo "✅ 构建完成"
 
 build-zip: ## 构建并生成ZIP包
 	@echo "🔨 构建并生成ZIP包..."
 	$(PYTHON) -m deepenc build --verbose --genzip
 	@echo "✅ 构建和打包完成"
 
-build-no-encrypt-zip: ## 构建项目并生成ZIP包（跳过加密）
-	@echo "🔨 构建项目并生成ZIP包（跳过加密模式）..."
-	$(PYTHON) -m deepenc build --verbose --skip-encryption --genzip
-	@echo "✅ 构建和打包完成"
 
 clean: ## 清理构建文件
 	@echo "🧹 清理构建文件..."

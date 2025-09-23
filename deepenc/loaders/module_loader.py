@@ -11,7 +11,6 @@ import importlib.abc
 import importlib.machinery
 import os
 import sys
-from pathlib import Path
 
 from ..core.auth import AuthManager
 from ..core.crypto import AESCrypto
@@ -31,7 +30,6 @@ class SmartModuleLoader(importlib.abc.MetaPathFinder, importlib.abc.Loader):
         self.auth_manager = AuthManager()
         self.encrypted_modules = {}
         self._cache = {}  # 解密后的代码缓存
-        self._project_root = self._find_project_root()
 
     def register_encrypted_module(self, module_name, encrypted_file_path):
         """注册加密模块
@@ -41,16 +39,17 @@ class SmartModuleLoader(importlib.abc.MetaPathFinder, importlib.abc.Loader):
             encrypted_file_path: 加密文件路径
         """
         self.encrypted_modules[module_name] = encrypted_file_path
-        print(f"🔐 注册加密模块: {module_name}")
+        print(f"🔐 {module_name}")
 
     def find_spec(self, fullname, path, target=None):
         """查找模块规范
 
-        智能判断模块是否加密，实现自动降级。
+        借鉴 Python 标准库实现，优先处理加密模块，
+        找不到时回退到普通模块导入。
 
         Args:
             fullname: 完整模块名
-            path: 搜索路径
+            path: 搜索路径（相对导入时已解析）
             target: 目标模块
 
         Returns:
@@ -59,30 +58,50 @@ class SmartModuleLoader(importlib.abc.MetaPathFinder, importlib.abc.Loader):
         try:
             # 1. 检查是否是已知的加密模块
             if fullname in self.encrypted_modules:
+                encrypted_path = self.encrypted_modules[fullname]
                 return importlib.machinery.ModuleSpec(
-                    fullname, self, origin=f"<encrypted:{fullname}>"
+                    fullname, self, origin=encrypted_path
                 )
 
-            # 2. 自动发现加密版本
-            encrypted_path = self._discover_encrypted_version(fullname)
+            # 2. 借鉴标准库：优先使用 path 参数，回退到 sys.path
+            if path is not None:
+                search_paths = path
+                # 如果 path 是空列表，直接返回 None（没有搜索路径）
+                if not search_paths:
+                    return None
+            else:
+                search_paths = sys.path
+            
+            # 3. 自动发现加密版本（使用正确的搜索路径）
+            encrypted_path = self._discover_encrypted_version(fullname, search_paths)
             if encrypted_path:
+                print(f"🔐 {fullname} -> {os.path.basename(encrypted_path)}")
                 # 自动注册发现的加密模块
                 self.register_encrypted_module(fullname, encrypted_path)
                 return importlib.machinery.ModuleSpec(
-                    fullname, self, origin=f"<auto_encrypted:{fullname}>"
+                    fullname, self, origin=encrypted_path
                 )
 
-            # 3. 检查是否存在普通版本（降级处理）
-            if self._has_normal_version(fullname):
-                print(f"📦 降级到普通导入: {fullname}")
-                return None  # 让系统使用默认导入器
-
-            # 4. 都不存在，交给其他导入器处理
+            # 4. 没有找到加密版本，交给其他导入器处理
             return None
 
         except Exception as e:
-            print(f"⚠️ 查找模块规范失败 {fullname}: {e}")
+            print(f"⚠️ {fullname}: {e}")
             return None
+
+    def create_module(self, spec):
+        """创建模块对象
+        
+        借鉴标准库实现，返回 None 让系统创建默认模块对象。
+        
+        Args:
+            spec: 模块规范
+            
+        Returns:
+            None: 让系统创建默认模块对象
+        """
+        # 返回 None 让系统使用默认的模块创建逻辑
+        return None
 
     def exec_module(self, module):
         """执行模块
@@ -118,7 +137,7 @@ class SmartModuleLoader(importlib.abc.MetaPathFinder, importlib.abc.Loader):
 
             # 执行解密后的代码
             exec(decrypted_content, module.__dict__)
-            print(f"✅ 成功加载加密模块: {module_name}")
+            print(f"✅ {module_name}")
 
             return module
 
@@ -139,18 +158,8 @@ class SmartModuleLoader(importlib.abc.MetaPathFinder, importlib.abc.Loader):
         if encrypted_file_path:
             module.__file__ = encrypted_file_path
         else:
-            # 尝试从模块名推断文件路径
-            possible_paths = self._module_name_to_paths(module_name)
-            for path in possible_paths:
-                if os.path.exists(path + ".py"):
-                    module.__file__ = path + ".py"
-                    break
-                elif os.path.exists(path + ".encrypted"):
-                    module.__file__ = path + ".encrypted"
-                    break
-            else:
-                # 如果都找不到，设置一个合理的默认值
-                module.__file__ = f"<encrypted:{module_name}>"
+            # 如果没有文件路径，设置一个合理的默认值
+            module.__file__ = f"<encrypted:{module_name}>"
 
         # 设置 __name__ 属性
         module.__name__ = module_name
@@ -161,12 +170,13 @@ class SmartModuleLoader(importlib.abc.MetaPathFinder, importlib.abc.Loader):
         else:
             module.__package__ = ""
 
-        # 设置 __spec__ 属性（如果可能）
+        # 设置 __spec__ 属性
         try:
             module.__spec__ = importlib.machinery.ModuleSpec(
                 module_name, self, origin=module.__file__
             )
-        except:
+        except Exception:
+            # 如果创建 ModuleSpec 失败，保持原有的 __spec__
             pass
 
         # 设置 __cached__ 属性
@@ -179,112 +189,58 @@ class SmartModuleLoader(importlib.abc.MetaPathFinder, importlib.abc.Loader):
         module.__loader__ = self
         module.__path__ = None  # 对于非包模块
 
-        # 如果是包模块，尝试设置 __path__
-        if "." in module_name:
+        # 如果是包模块，设置 __path__
+        # 检查文件名是否为 __init__ 文件来判断是否为包
+        if (encrypted_file_path and 
+            os.path.basename(encrypted_file_path).startswith('__init__')):
             try:
-                package_path = os.path.dirname(module.__file__)
+                package_path = os.path.dirname(encrypted_file_path)
                 if os.path.isdir(package_path):
                     module.__path__ = [package_path]
-            except:
+            except Exception:
                 pass
 
-    def _discover_encrypted_version(self, module_name):
+    def _discover_encrypted_version(self, module_name, search_paths):
         """自动发现加密版本
+
+        借鉴标准库实现，在指定搜索路径中查找加密模块。
 
         Args:
             module_name: 模块名称
+            search_paths: 搜索路径列表
 
         Returns:
             str: 加密文件路径，未找到返回 None
         """
-        # 将模块名转换为可能的文件路径
-        possible_paths = self._module_name_to_paths(module_name)
-
-        for base_path in possible_paths:
+        # 借鉴 FileFinder 的实现：提取模块的尾部名称
+        tail_module = module_name.rpartition('.')[2]
+        
+        # 遍历搜索路径
+        for search_path in search_paths:
+            if not isinstance(search_path, str):
+                continue
+                
             # 检查各种可能的加密文件扩展名
             encrypted_extensions = [".encrypted", ".py.encrypted", ".enc"]
-
+            
             for ext in encrypted_extensions:
-                encrypted_path = base_path + ext
-                if os.path.exists(encrypted_path):
-                    print(f"🔍 自动发现加密模块: {module_name} -> {encrypted_path}")
-                    return encrypted_path
+                # 借鉴标准库 FileFinder：只使用 tail_module，不使用完整路径
+                
+                # 1. 先检查包形式 (__init__ 文件)
+                base_path = os.path.join(search_path, tail_module)
+                if os.path.isdir(base_path):
+                    init_encrypted = os.path.join(base_path, '__init__' + ext)
+                    if os.path.isfile(init_encrypted):
+                        return init_encrypted
+                
+                # 2. 再检查单文件形式
+                module_file_path = os.path.join(search_path, tail_module + ext)
+                if os.path.isfile(module_file_path):
+                    return module_file_path
 
         return None
 
-    def _has_normal_version(self, module_name):
-        """检查是否存在普通版本
 
-        Args:
-            module_name: 模块名称
-
-        Returns:
-            bool: 是否存在普通版本
-        """
-        possible_paths = self._module_name_to_paths(module_name)
-
-        for base_path in possible_paths:
-            # 检查 .py 文件
-            py_path = base_path + ".py"
-            if os.path.exists(py_path):
-                return True
-
-            # 检查包目录（包含 __init__.py）
-            if os.path.isdir(base_path):
-                init_path = os.path.join(base_path, "__init__.py")
-                if os.path.exists(init_path):
-                    return True
-
-        return False
-
-    def _module_name_to_paths(self, module_name):
-        """将模块名转换为可能的文件路径
-
-        Args:
-            module_name: 模块名称
-
-        Returns:
-            list: 可能的文件路径列表
-        """
-        module_parts = module_name.split(".")
-        possible_paths = []
-
-        # 方案1: 直接路径
-        direct_path = os.path.join(self._project_root, *module_parts)
-        possible_paths.append(direct_path)
-
-        # 方案2: 添加常见的源码目录前缀
-        common_prefixes = ["src", "lib", "modules", "packages"]
-        for prefix in common_prefixes:
-            prefixed_path = os.path.join(self._project_root, prefix, *module_parts)
-            possible_paths.append(prefixed_path)
-
-        # 方案3: 如果第一个部分不是已知前缀，尝试作为包名
-        if module_parts[0] not in common_prefixes:
-            package_path = os.path.join(self._project_root, *module_parts)
-            if package_path not in possible_paths:
-                possible_paths.append(package_path)
-
-        return possible_paths
-
-    def _find_project_root(self):
-        """查找项目根目录
-
-        Returns:
-            str: 项目根目录路径
-        """
-        current_dir = Path.cwd()
-
-        # 查找包含项目标识文件的目录
-        project_markers = [".git", "setup.py", "pyproject.toml", "requirements.txt"]
-
-        for parent in [current_dir] + list(current_dir.parents):
-            for marker in project_markers:
-                if (parent / marker).exists():
-                    return str(parent)
-
-        # 如果找不到，使用当前目录
-        return str(current_dir)
 
     def _decrypt_module(self, encrypted_file_path):
         """解密模块文件
@@ -324,12 +280,13 @@ class SmartModuleLoader(importlib.abc.MetaPathFinder, importlib.abc.Loader):
             "registered_modules": len(self.encrypted_modules),
             "cache_keys": list(self._cache.keys()),
             "registered_keys": list(self.encrypted_modules.keys()),
+            "search_paths": [os.path.abspath(p) for p in sys.path if p and os.path.exists(p)],
         }
 
     def clear_cache(self):
         """清理缓存"""
         self._cache.clear()
-        print("🧹 模块缓存已清理")
+        print("🧹 缓存已清理")
 
     def unregister_module(self, module_name):
         """取消注册模块
@@ -339,11 +296,11 @@ class SmartModuleLoader(importlib.abc.MetaPathFinder, importlib.abc.Loader):
         """
         if module_name in self.encrypted_modules:
             del self.encrypted_modules[module_name]
-            print(f"❌ 取消注册模块: {module_name}")
+            print(f"❌ {module_name}")
 
         if module_name in self._cache:
             del self._cache[module_name]
-            print(f"🧹 清理模块缓存: {module_name}")
+            # 静默清理缓存
 
 
 class ModuleLoaderManager:
@@ -376,8 +333,7 @@ class ModuleLoaderManager:
             # 安装加载器（最高优先级）
             sys.meta_path.insert(0, self.loader)
 
-            print("🚀 智能模块加载器已安装")
-            print("🎯 系统将自动处理加密/非加密模块")
+            print("🚀 加载器已安装")
 
             return self.loader
 
@@ -389,16 +345,16 @@ class ModuleLoaderManager:
         try:
             if self.loader and self.loader in sys.meta_path:
                 sys.meta_path.remove(self.loader)
-                print("❌ 智能模块加载器已卸载")
+                print("❌ 加载器已卸载")
 
             if self._original_meta_path:
                 sys.meta_path = self._original_meta_path.copy()
-                print("🔄 已恢复原始导入系统")
+                # 静默恢复原始导入系统
 
             self.loader = None
 
         except Exception as e:
-            print(f"⚠️ 卸载模块加载器时发生错误: {e}")
+            print(f"⚠️ 卸载失败: {e}")
 
     def get_loader(self):
         """获取加载器实例
